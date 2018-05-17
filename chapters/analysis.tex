@@ -1,0 +1,52 @@
+\chapter{Analysis}
+
+\section{Definition Structure}
+Early descriptions of \gls{sme} defined networks in a rather rigidly, by
+requiring all buses, process instantiations and links between them to be placed
+within a network definition. Building \gls{sme} networks in this manner proved
+limiting and confusing as it was easy to loose track of how buses within a
+network was connected. The C\# implementation of \gls{sme} loosened this
+restriction by defining buses directly within processes. Connections between
+processes was then created simply by referring to a bus within another
+process. This proved, in practice, to be much more programmer friendly as it
+made the connections between processes easier to reason about. The limiting
+factor of this design was the bijective relationship between process
+declarations and their instances. Overcoming this limitation in practice
+required the inelegant use of plain-text templates for creating multiple
+duplicate process and network definitions. To remove this limitation, support
+for ``Scopes'' was added to C\# \gls{sme}. Scopes a
+
+Each network definition creates an enclosed scope around the processes it
+instantiates. Therefore, processes from other networks may only connect to buses
+which are exposed through another network definition. 
+
+\section{Network Instantiation}
+Instantiation of process networks defined in \gls{smeil} is a topic which
+deserved particular attention. In \gls{sme} libraries for general-purpose
+languages, the networking structures are explicitly defined and network
+instantiations happen naturally when the code is execution. The actual
+instantiation process here is, as we might say, handled by the programming
+language that the networks are instantiated within. For \gls{smeil} we aren't as
+lucky and a method needed to be developed. Valid \gls{sme} networks are
+representable as a connected directed acyclic graph. Acyclicity is a required
+property as we would otherwise end up with infinite instantiation loops. The
+buses of \gls{sme} networks may, however, form loops. Once the graph has been
+created and we have shown the graph to be acyclic, we topologically sort the
+nodes and start instantiating the network from the first node in the sorted
+nodelist.  TODO: Show examples and write some more about this. The method of
+instantiation for \gls{sme} networks is summarized as follows:
+% \begin{itemize}
+% \item Construct a graph from \gls{sme} network definitions
+% \item Show that graph is acyclic
+% \item Perform a topological sort of nodes in the graph. Instantiate the network
+%   from the first entry of this graph. Alternatively, simply start from the node
+%   with in-degree of 0. (TODO: Is this valid?)
+% \end{itemize}
+
+TODO: Clarify relationship between instantiation graph and connection graph.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../master"
+%%% TeX-command-extra-options: "-enable-write18"
+%%% End:

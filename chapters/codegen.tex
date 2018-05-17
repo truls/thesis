@@ -1,0 +1,61 @@
+\chapter{Code Generation}
+\label{sec:codegen}
+SMEIL compiles to clean and readable VHDL code which is amenable to manual
+modifications, should this be desired. The code may be executed using a VHDL
+simulator or passed to FPGA vendor tools for synthesis and subsequent
+hardware-implementation. The generated code is a cycle-accurate representation
+of the original SMEIL network.
+\todo{Make more detailed or don't use a separate chapter.?}
+
+\section{Code transformations}
+In the f
+
+The fundamental structure of the SMEIL code is preserved in the generated
+VHDL. One VHDL entity is generated per SMEIL entity and the body a SME process
+is transformed to a sequential process in VHDL. For each of these processes, we
+also generate code for performing an asynchronous reset of all variables and
+outgoing signals. The naming hierarchy of the original SMEIL is preserved,
+making it easy to identify from where a particular section of the VHDL code was
+generated.
+
+For verifying the generated VHDL code, a test-bench is also generated. The
+test-bench is connected to the {\ttfamily exposed} buses of the SMEIL program. The
+CSV-trace file containing the values recorded during simulation is used by the
+VHDL test bench to drive inputs and verify outputs.
+
+Alongside the generated code, a {\ttfamily Makefile} is generated which simplify
+building and testing the generated code using the GHDL VHDL simulator.
+
+Integer types of SMEIL are represented in VHDL using the types provided by the
+standard {\ttfamily ieee.numeric\_std} package. This package provides functions for
+performing signed and unsigned integer arithmetic with logic-vectors. For
+example, the types {\ttfamily i4} and {\ttfamily u12} are represented as {\ttfamily signed (3
+  downto 0)} and {\ttfamily unsigned (11 downto 0)} respectively. Arrays require the
+creation of a new {\ttfamily type} in VHDL. A {\ttfamily type} declaring a 10-element array
+of 5-bit signed integers ({\ttfamily [10]i5} in SMEIL) is represented in VHDL as
+\begin{lstlisting}[language=vhdl]
+type \[10]i5\ is array (0 to 9) of unsigned (4 downto 0);
+\end{lstlisting}
+These type declarations are stored in a separate package, {\ttfamily sme\_types.vhdl},
+which is shared between all entities of the design to avoid cluttering the
+generated code with duplicated declarations. SMEIL booleans are represented
+using the VHDL type {\ttfamily boolean}. As an alternative to this, a single {\ttfamily
+  std\_logic} type is commonly used. This type represents a wire in the hardware
+and is, therefore, able to have other states than just true or false. This may
+be useful in some circumstances.
+
+The actual code is generated using the {\ttfamily language-vhdl-quote}
+library~\cite{language-vhdl-quote} which provides
+quasiquoters~\cite{mainland2007s} for building VHDL ASTs using the concrete VHDL
+syntax. The major advantage of this approach is that it minimizes the chance of
+generating syntactically invalid VHDL since syntax errors are caught during
+compilation of \libsme{}. Furthermore, a complete VHDL AST is constructed
+containing the contents of each generated VHDL file. This AST is then
+pretty-printed, yeilding consistently formatted code which is difficult to
+achieve using more common techniques using string-based templates.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../master"
+%%% End:

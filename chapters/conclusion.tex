@@ -1,0 +1,167 @@
+\chapter{Conclusions}
+
+% \section{Related work}
+
+% \section{Future Work}
+
+% A key assumption of this work is that we assume that input values explore the
+% value ranges of SME buses. In many cases, this assumption may be impractical as
+% the quality of test-cases has an enormous impact on the correctness and
+% usefulness of the resulting implementation. To address this, methods for
+% inferring the value ranges of SME buses using purely static means may also be
+% useful.
+
+% Allow \gls{vhdl} code to be embedded within \gls{smeil} and simulate by linking
+% the simulation to a \gls{vhdl} simulator using \gls{vhpi}. This is similar to
+% work done by cocotb and clash master
+
+\section{Related Work}
+% Work related to SMEIL centers around two different areas; high level languages
+% for implementing hardware designs mention.
+
+% Xilinx HLS attempts to infer concurrency from sequential C programs guided by
+% annotations and use that to generate hardware descriptions. A drawback of this
+% approach is that the quality of the resulting hardware implementation depends
+% greatly on the quality of the added annotations. SME takes a different approach
+% in being explicit about the concurrency of the resulting hardware design.
+
+In addition to the HLS approaches mentioned in the introduction, several
+alternative hardware design modeling tools have been proposed both in the
+industry and in academia. Furthermore, a number of approaches to replace test
+benches written in traditional HDLs has been proposed.
+
+MyHDL~\cite{myhdl} is a Python-based HDL, essentially a DSL embedded in
+Python. It is intentionally implemented as a high-level version of traditional
+HDLs while enabling Python to be used for test-benches. Since it inherits its
+worldview from traditional HDLs, it has a different goal than SME which provides
+an abstraction through the SME model.
+
+Cx~\cite{cxlang} is a dedicated DSL for writing hardware designs. The Cx
+language has several similarities with SMEIL, for example, the type system. Like
+SME, it allows the programmer to explicitly control concurrency by building
+networks of processes. However, despite claims on its website, Cx is a
+proprietary language requiring a license for long-term use giving it a high
+barrier-of-entry.
+
+C\textlambda{}aSH~\cite{wester2015transformation} and Lava\cite{bjesse1998lava}
+are two Haskell based approaches with different philosophies: Lava is a Haskell
+design pattern (with several implementations e.g., \cite{gill2009introducing})
+for specifying composable circuits at the gate-level. The extremely low-level
+approach means that it is targeted towards replacing and formalizing certain
+low-level uses of HDLs rather than as a general high-level hardware modeling
+tool. C\textlambda{}aSH, on the other hand, transforms a subset of high-level
+Haskell code to HDLs. This requires concurrency inference, but this is simpler
+to do for a purely functional language, such as Haskell, compared to an impure
+imperative language, such as C.
+
+A more recent approach~\cite{aronsson2017hardware} also uses Haskell, but only
+as a host for an Embedded DSL. This EDSL translates to both VHDL and C, enabling
+the programmer to trivially change which parts of her program that runs on the
+CPU or the FPGA. The library automates setting up AXI interconnects between the
+CPU-part and the FPGA-part of the code. The advantage of this approach is that
+it enables simple hardware-software co-design. The primary disadvantage of this
+approach, is that the CPU code must also be written in the DSL. For many
+applications, this can be overly restrictive since reuse of existing code and
+common libraries is not possible.
+
+CAPF~\cite{serot2011implementing}, Pyrope~\cite{pyrope} and
+Chisel~\cite{bachrach2012chisel} are HDLs which provide data-flow based design
+models. CAPF and Pyrope are independent languages while Chisel is an EDSL in
+Scala. The data layouts that are good fits for these languages are also
+expressible using SME, albeit less elegantly. However, problems which are best
+represented as a sequential algorithm can be a poor fit for the data-flow
+paradigm.
+
+The Coroutine Co-Simulation Test Bench (CoCoTB)~\cite{cocotb} also implements a
+notion co-simulation between Hardware Descriptions and Python (A General-Purpose
+language). Using the Verilog Procedural Interface (VPI) which (despite the name)
+is implemented by both VHDL and Verilog simulators. This library presents a
+significant advantage over writing test benches exclusively in HDLs, however,
+the relative complexity of the VPI interface leaks into the CoCoTB interface,
+requiring a non-trivial amount of boilerplate code. Furthermore, it does not
+directly address the productivity issues associated with traditional HDLs and
+does not offer the unified simulation model used in SME.
+
+
+\section{Future Work}
+Other SME implementations, C\# SME in particular (see
+e.g.~\cite{skovhede2018statemachine}) have evolved in parallel with the
+development of SMEIL. Therefore, these are more comprehensive and support a
+wider range of features. Since SMEIL is, as previously mentioned, intended to
+serve as the only target language for SME, SMEIL should obviously be brought
+on-par with other existing SME implementations. In the present work, a
+substantial amount of compiler-infrastructure groundwork has been laid, making
+these improvements a natural continuation of future SMEIL developments.
+
+As the primary target for SMEIL is hardware, VHDL is the only code generation
+backend currently implemented. However, we intend to provide a wide range of
+language backends~\cite{skovhede2017c++} is another part of catching up with
+other SME implementations. For example, generating C++ code can make it possible
+to use SME programs with other software as a library and provide significantly
+faster simulation than the current interpretation-based approaches are able to
+offer.
+
+All SME implementations currently target a single clock domain. Future efforts
+should be made towards supporting multiple clocks, running at different speeds.
+
+In some cases, SMEIL offers an insufficient amount of control over the generated
+VHDL code or the generated code may simply be inefficient compared to
+hand-optimized VHDL code. For this, we should allow inlining VHDL inside SMEIL
+by adding language constructs to specify how SME buses should be connected to
+VHDL signals. The simulation of such mixed code can be performed by running VHDL
+parts in a VHDL simulator.
+
+Hardware-software co-design is an area that is actively researched. The idea is
+that specialized hardware is designed in parallel with corresponding software
+such that each part of the design can be handled in either hardware or software
+depending on what is best suited. Such heterogeneous designs require code for
+setting up the communication between the hardware and software parts. SME is
+well suited for this and we should, therefore, try to develop a mechanism
+allowing communication between SME networks running on different devices where
+the actual generation of the communication interfaces is handled transparently.
+
+The presented approach for automatically typing SMEIL networks based on observed
+input makes the assumption that the complete possible space of input values is
+explored by the testing stimuli. The downside of this approach is that this
+assumption may be hard to fulfill. To address this, the current approach could
+be augmented by integer range analysis for proving the observed ranges.
+
+
+\section*{Conclusion}
+We have presented SMEIL, a DSL for implementing SME networks and demonstrated
+its practical use through several examples. Although we have focused on using it
+as a primary implementation language for SME networks, it is also usable as an
+intermediate language for other SME implementations. SMEIL is based on the
+structural components of the SME model and provides a high-level C-like syntax
+with constructs commonly found in general-purpose imperative languages. This is
+needed in order to ensure that SME networks implemented in general-purpose
+languages can be translated without requiring sophisticated transformations.
+
+The type-system presented supports bit-precise types which is important for a
+hardware-targeted language. However, the requirement to specify a fixed
+bit-width for all types is sometimes impractical. Instead, arbitrary-length
+types may be specified which are then constrained based on values observed
+during simulation.
+
+Simulation of SMEIL is performed in a manner which provides a cycle-accurate
+representation of the resulting hardware. During the simulation, a trace of
+channel communications is recorded. SMEIL compiles to readable VHDL code which
+can be used for a subsequent hardware implementation. Additionally, a test-bench
+is generated which can be used to verify the correctness of the generated
+code. The test-bench uses the trace recorded during simulation to allow
+continuous verification of the generated code even following manual refinement.
+
+For testing SMEIL networks directly, an interface is provided for performing
+co-simulation with SME networks written in general-purpose languages. This
+approach proved highly successful in practice.
+
+The presented language and its implementation does not yet provide the full
+feature-set of other, more mature, SME implementations. In spite of this, we are
+optimistic about its future prospects, regardless of if these include use as an
+independent DSL or as a primary implementation language for SME.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: ../master
+%%% TeX-command-extra-options: "-enable-write18"
+%%% End:

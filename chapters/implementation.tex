@@ -1,0 +1,248 @@
+\chapter{\libsme{} design and implementation}
+
+\section{Methods of interaction}
+\label{sec:using}
+SMEIL programs are run using the {\ttfamily libsme} library either through interaction
+with the C API of the library or by using the provided command line utility.
+
+\begin{description}
+\item[Direct code generation.] A SMEIL program constitutes a complete
+  description by itself provided that only size constrained types are
+  used. Therefore, VHDL code can be generated directly from a SMEIL program
+  without the intermediate simulation step present in the most common
+  workflows. Some advantages are lost when using this mode, as no test bench is
+  created and the generated VHDL code must be manually modified and connected to
+  a clock source before it can be tested using a VHDL simulator.
+\item[Pure SMEIL simulation.] This mode only applies to SMEIL networks which
+  contain their own data generation process (see \Cref{sec:7seg} for an example
+  of such a network). SMEIL used like this is not very useful as it can only
+  produce output through {\ttfamily trace} statements (\Cref{sec:trace}).
+  \item[Co-simulation of SMEIL.] The most common intended usage scenario for
+    SMEIL is to use it together with an SME library for a general purpose
+    language. We describe this concept in further details in the following
+    section.
+\end{description}
+
+\label{sec:libsmeimpl}
+\begin{figure}%[tb]
+  \centering
+  \resizebox{\linewidth}{!}{
+    \begin{tikzpicture}[font=\small,
+      rep style/.style={rectangle,draw=black,text width=1.5cm,minimum
+        size=1.5cm,align=center},
+      proc style/.style={ellipse,draw=black,align=center,text
+        width=1.5cm,minimum size=1.5cm,align=center},
+      file style/.style={ellipse,draw=none,align=center,text
+        width=1.5cm,minimum size=0.5cm,align=center}
+      ]
+      \node[proc style] (parser) {Parser};
+      \node[proc style, right=1cm of parser] (import) {Import Resolver};
+      \draw[-{Latex[scale=1.6]}] (parser) edge [bend right=30] (import);
+      \draw[-{Latex[scale=1.6]},dashed] (import) edge [bend right=30] (parser);
+
+      \node[proc style, right=1cm of import] (tyc) {Type Checker};
+      \draw[-{Latex[scale=1.6]}] (import) edge (tyc);
+      \node[proc style, below=3.1cm of tyc] (an) {Analyzer};
+
+      \draw[-{Latex[scale=1.6]}] (tyc) edge [bend left=20] (an);
+      \draw[-{Latex[scale=1.6]},dashed] (tyc) edge [bend right=20] (an);
+
+      \node[proc style, below right=1cm and -0.5cm of import] (recon) {Retyper/\\Recon-\\structor};
+      \node[proc style, below=0.5cm of parser] (sim) {Simulator};
+      \node[proc style, below=1cm of sim] (codegen) {Code Generator};
+      \draw[-{Latex[scale=1.6]}] (an) edge (sim);
+
+      \draw[-{Latex[scale=1.6]}] (sim) edge (codegen);
+      \draw[-{Latex[scale=1.6]},dashed] (sim) edge (recon);
+      \draw[-{Latex[scale=1.6]},dashed] (recon) edge (tyc);
+      \draw[-{Latex[scale=1.6]},dashed] (an) edge [bend left=20] (codegen);
+      \draw[-{Latex[scale=1.6]}] (an) edge [bend right=10] (codegen);
+
+      \node[rep style, left=2cm of parser, text width=2cm] (cmdl)  {{\ttfamily  smec} (Command line)};
+
+      \node[rep style, below=0.5cm of cmdl, text width=2cm] (cosim)  {Co-simulator\\(PySME, ...)};
+      \draw[-{Latex[scale=1.6]},dashed] (cosim) edge [bend right=10] node[above] {API} (sim);
+      \draw[-{Latex[scale=1.6]},dashed] (sim) edge [bend right=10] (cosim);
+      \draw[-{Latex[scale=1.6]}] (cosim) edge  (parser);
+
+      \draw[-{Latex[scale=1.6]}] (cmdl) edge node[below=0.3cm,rotate=26]
+      {{\ttfamily \tiny file.sme}} (parser);
+
+      \node[file style, below=1cm of cosim] (trace) {Trace file};
+      \node[file style, below=0.1cm of trace, text width=0.8cm] (vhdl) {VHDL};
+
+      \draw[-{Latex[scale=1.6]}] (sim) edge (trace);
+      \draw[-{Latex[scale=1.6]}] (codegen) edge (vhdl);
+
+      \begin{scope}[on background layer]
+        \node[draw=scopeborder,fill=scopebg,inner sep=10pt,rounded corners=10pt,anchor=north west,fit=(parser)(an)(codegen),label={below}:libsme] (libsme) {};
+        \node[draw=scopeborder,fill=scopebg,inner sep=10pt,rounded corners=10pt,anchor=north west,fit=(cmdl)(cosim),label={above}:Interactors] (inter) {};
+        \node[draw=scopeborder,fill=scopebg,inner sep=5pt,rounded corners=10pt,anchor=north west,fit=(trace)(vhdl),label={below}:Outputs] (inter) {};
+      \end{scope}
+    \end{tikzpicture}
+  }
+  \caption{Overviews of interactions with and data flow within \libsme{}. The
+    dashed lines denotes paths which are followed conditionally depending on
+    which mode \libsme{} is executed in.}
+  \label{fig:overview}
+\end{figure}
+
+In the previous sections, we have described the individual parts of \libsme{}
+without describing its combined data flow. Hence, we devote a section for that
+purpose here. An overview of the \libsme{} library and its interactions is shown
+in \Cref{fig:overview} and the individual steps are described below.
+
+\section{An overview}
+
+\subsection{Parsing and Import Resolution} Regardless of how \libsme{} is
+invoked (see \Cref{sec:using}) the SMEIL source is parsed and the resulting AST
+is passed through the import resolver. Here, the code is scanned for the
+presence of import statements. If any are found, the source files containing the
+imported modules are parsed in a recursive manner. The tree of imported modules
+is then flattened by renaming hierarchical references. This process seek to
+simplify the subsequent phases of the compilation process as module hierarchies
+do not have to be considered. The renamings are tracked an passed on to the
+following stages so that a reverse mapping may be performed later, for example
+for error messages.
+
+In more detailed terms, the algorithm for performing imports work as
+follows:\todo{Merge this paragraph with the previous} A
+module import is handled through recursive descendant evaluation of imports
+where different information is passed on the outgoing and incoming edges of the
+module dependency graph. On forward edges, we pass the import
+``paramteres'' of a module and on the backward edges we pass the renamed
+module. Every time something is passed on an incoming edge, it is folded (merge)
+into the code on that level. Before merging, all top-level names and references
+to those names are renamed such that there is no name-clashes with the code that
+the module is being merged into. During this process, we also ensure that all
+imported names actually exists and produce a error if they do not.
+
+% The process of importing a module goes through several steps. The aim of this
+% process is to end up with a flattened and normalized module and thus to discard
+% the module information as early as possible in the compilation
+% process. Conceptually, the process mimics the recursive nature of the module
+% system where different information flows forward and backwards along the forward
+% and backwards edges of the recursion call-tree. Module system implementations
+% more commonly aim to treat modules as isolated units
+
+
+\subsection{Type Checking} The code is then passed through the type checker
+which enforce the typing rules described in \Cref{sec:typesys}. A single
+abstract representation of SMEIL is used throughout the compiler. This is
+sometimes inconvenient and code simplifications could be made if a simplified
+intermediate representation was used within the compiler. However, this
+disadvantage is offset by the ability to reconstruct the original source code
+with the spliced types. Furthermore, maintaining an unchanged representation of
+the original source code means that the generated code more closely corresponds
+to the source code.
+
+The type checker makes two passes through the code.
+\begin{itemize}
+\item The first pass locates all entity definitions (processes and networks) and
+  adds them to the top-level symbol table. For every entity found, the
+  declarations of that entity are added to a local symbol table which is
+  associated with the entity.
+\item The second pass performs type checking on all declarations and statements
+  in the entities of the program. During this process, the individual AST-nodes
+  are annotated with their types. \todo{Should there be an example here?} Having
+  such type information available throughout the AST is immensely useful for
+  later passes, such as code generation and simulation.
+%     For example, suppose
+%     expression {\ttfamily 2 + 6} is represented in an AST as
+% \begin{verbatim}
+% (PlusOp Untyped (LitInt 2) (LitInt 6)
+
+% \end{verbatim}
+\end{itemize}
+
+The two pass approach ensures that declarations can be given in any
+order. Requiring declarations to be made ahead-of-use would make the code in
+many of the examples shown throughout this thesis significantly more convoluted.
+  
+\subsection{Analysis} The analysis phase examines the structure of a network.
+This is used for determining the top-level entity and for building the runtime
+representation used for simulation. From here, the AST may take two paths
+depending on the mode of invocation requested by the user. It is either passed
+on directly to the code generator or simulated. If the AST was already retyped
+by the simulator, it is passed directly to the code generator.
+
+\subsection{Simulation}
+Simulation is performed to test a design. During the simulation, the value
+ranges assigned to every variable and bus channel are tracked such that we can
+use them for constraining integer types. Furthermore, the values of
+external-facing buses are logged and used to construct the CSV trace file used
+by the generated VHDL test-bench. \todo{Discuss why we only have external
+  interfaces} The simulator also performs accurate emulation of integer
+overflows. During simulation, if \libsme{} is used for co-simulation, it will
+exchange the values of external-facing buses with another SME network. After
+simulation, the AST may either be passed directly to the code generator or, if
+new types were assigned, returned to the type checker.
+
+Very early in the development of this project, we considered if implementing a
+simulator of SMEIL was even needed. After all, if used as an intermediate
+language, the SME simulation could be performed directly on the source and SMEIL
+could be used simply for the code generation part. In this scenario, the trace
+file used for the test bench would simply be passed along with the SMEIL
+intermediate code and used in the generated VHDL test code. However, we
+determined that without a simulator, 
+
+\subsection{Code generation}
+The final stage, yielding the desired output, is the code generation phase
+which, as its name suggests, turns the typed and simulated SMEIL AST into VHDL
+code.
+\subsection{Reconstruction} If observation based typing was enabled, the
+simulator will have annotated the SMEIL AST with types based on the observed
+values. By reconstructing a structure resembling the original AST, reusing the
+stages of the compiler is simplified. Furthermore, the results of the retyping
+are shown to the user using nicely formatted concrete SMEIL syntax.
+
+\section{Runtime Representation of SMEIL}
+Since entities in SMEIL can be instantiated, there is not a one-to-one
+correspondence between the number of entity and bus declarations and the number
+of objects in the runtime representation. Here, we describe the algorithm used
+to go from program declaration to runtime objects. \todo{finish}
+
+\todo{Describe the recursive algorithm used for creating a runtime
+representation of an SMEIL program.}
+
+
+\section{Design philosophy}
+TODO: Discuss issues related to maintaining a single internal representation
+throughout the compiler which is reconstructable to the original concrete
+syntax.
+
+% Early on, we considered a particular challenge that this project would
+% pose. Primarily due to the following design goals
+
+% An ongoing dilemma throughout the design of \libsme{} were the balance of code
+% complexity versus usability. As seen in the overview of the SMEIL design
+% \todo{reference} there are numerous optional syntactical features. An idea that
+% we have been conti
+
+
+% \todo{evaluate impl. quality}
+% The . Another area where statically typed functional languages excel is code
+% refactoring. For a large program written in, for example, Python, changing a
+% fundamental data structure is a daunting task. In Haskell, you simply change the
+% data structure to the desired form and fix the resulting type errors throughout
+% your program.
+
+% In contrast with other, impure, functional languages, such as F\# or ocaml, the
+% purity of Haskell means that mutable state is introduced in a highly controlled
+% manner, using monadic compositions. This is in contrast to dynamic languages
+% such as Python where 100\% test coverage is needed to ensure that a typo in a
+% rarely traversed code path will not cause the program to crash. Overall, our
+% experience developing a moderately large project in Haskell has been extremely
+% pleasant. By using Haskell, we have traded a slightly slower development pace,
+% for significantly less time spent debugging.
+
+The library itself comprises just short of 6000 SLOC of Haskell. Additionally,
+the wrapper module for holding the co-simulation state and neatly exposing the
+functions of the C-API is implemented in a module is $\sim 500$ SLOC of C. The
+VHDL parsing and quasiquotation library developed for use with this project
+consists of approximately 5500 SLOC of Haskell.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../master"
+%%% End:

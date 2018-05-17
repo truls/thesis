@@ -1,0 +1,231 @@
+\chapter{Synchronous Message Exchange}
+\label{sec:sme}
+In this chapter, we introduce the Synchronous Message Exchange model and briefly
+describe its origins, evolution, semantics and implementation. The design of
+SMEIL draws from the lessons learned throughout the, rather brief, time period
+in which SME has existed. Here, we try to convey these insights to the reader.
+
+\section{The Beginnings}
+The Synchronous Message Exchange was conceived
+based on the experiences of a masters thesis project \cite{Skaarup14} which
+attempted to transform a model vector processor to a hardware description. The
+vector processor was modeled with CSP using PyCP, a CSP library for Python. The
+initial experiences using CSP for modeling the processor were quite good: the
+process abstraction of CSP was well suited for representing the discrete
+components of a hardware design. They also concluded that the modularity
+originating from the {\itshape shared-nothing} (more on that later) property of CSP
+was advantageous: It allowed seamlessly interchanging fine- and course grained
+implementations of the same logical component.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/clocked.pdf}
+  \caption{In order to enforce synchronous communication semantics on a simple
+    CSP network, a large amount of additional complexity is needed. Figure
+    from~\cite{vinter2014synchronous}.}
+  \label{fig:clocked}
+\end{figure}
+
+The masters thesis project (mentioned above) which later attempted to convert
+the CSP model to an actual hardware description found the pure CSP approach less
+apt, revealing a fundamental discrepancy between the data propagation models of
+hardware and of CSP. In CSP, a process is free to communicate whenever it wants
+while in digital hardware, all communication is driven forward synchronously by
+a clock.
+% Enforcing globally synchronous communication using CSP is hard, since
+% CSP is inherently asynchronous.
+Thus, to accurately model hardware in CSP, this
+clock had to be emulated by adding a single clock process with broadcasting
+channels to every other process in the network. Back-channels also had to be
+inserted from every process in the network to the clock process such that it
+could be informed when a process had finished running. Furthermore,
+latch-processes had to be inserted into every channel going between
+processes. This was needed in order to ensure that values were not propagated in
+the middle of a clock cycle. The effect of adding these additional processes and
+channels is seen in \Cref{fig:clocked}. Whenever the clock process emitted a
+signal, all processes in the network would run. When the processes had run, the
+latch processes ensured that values were propagated to the next process.
+% When all processes had signaled a completed
+% run, the clock would signal the latch processes in order to propagate the values
+% of the network.
+
+In the end, the thesis successfully managed to translate simple PyCSP networks
+to VivadoC, a language for HLS. Despite this, the conclusion of the thesis work
+was that, while CSP could be forced to adhere by globally synchronous semantics,
+the networks required to do so were prohibitively complex. Furthermore, only a
+small subset of the features of CSP was used in the hardware-targeted
+processes. Particularly, a concept central to CSP, \textit{external choice}
+which allows a process to determine if it should run based on whether it
+received a message, was not found to be applicable to hardware designs. However,
+not all was bad: As concluded in the original vector-processor design work, the
+shared-nothing property of CSP proved useful as the state of the network could
+only be altered by processes communicating. This made it simple to compose
+networks by making multiple instances of the same process.
+
+These experiences discarded the idea of using pure CSP as a hardware design
+tool, but lead to the conception of a derived model, SME, which maintained the
+concepts of CSP that were found beneficial while adding a new, globally
+synchronous, communication model. \cite{vinter2014synchronous}
+
+\section{The Model}
+The key concept of the SME model is that introducing an implicit clock would
+eliminate the complexity of forcing CSP to adhere by globally synchronous
+message. \todo{List properties}
+
+\begin{description}
+\item [Implicit clock]
+  \item[..]
+\end{description}
+
+\subsection{SME components}
+Building on its CSP roots, the fundamental unit in an SME network is the
+{\itshape process}. Processes are connected through buses, from which networks
+are build. We use the name ``bus'' instead of ``channel'', which is used in
+CSP, to maintain a hardware analogy and underpin its semantic equivalences with
+a physical signal bus. Furthermore, a bus in SME generalize the concept of a
+wire
+
+A bus in SME it equivalent to a collection of broadcasting channels.
+
+
+A bus
+
+This is also considered part of the hardware analogy, since, is a bundle of
+wires which together constitute a combined signal path.
+
+\subsection{Execution Flow}
+The SME concept ``clock cycle'' (\Cref{fig:smeclock}) goes through two distinct
+phases.
+\begin{description}
+\item[Compute phase.] All processes run during the compute phase. While the
+  processes run, the values of the reading ends of buses are kept constant. 
+\item[Bus propagation.] The bus propagation phase copies all values from the
+  read-end of a bus to the write end.
+\end{description}
+
+Each channel in a bus has a reading-end and a writing-end. During the compute
+phase of a cycle, the reading-ends of channels are kept constant. The writing
+end of a channel has a single-element overwrite buffer. The bus propagation
+phase copies all values from the reading-end to the writing end. Thus, values
+written in cycle $c$, will be read in cycle $c+1$.
+
+\begin{figure}
+  \centering
+\resizebox{.9\linewidth}{!}{
+\begin{tikzpicture}
+  \foreach \i in {0,4,8}
+  \draw (\i,0) -- (\i+2,0) -- node [xshift=-0.2cm,rotate=90] {Read} (\i+2,2) -- node
+  [yshift=0.2cm] {Compute}(\i+4,2) -- node [xshift=0.2cm,rotate=270] {Write} (\i+4,0);
+  
+  \draw (12,0) -- (14,0);
+  \node [] at (13,-0.3) () {Propagate};
+
+  \draw [decorate,decoration={brace,amplitude=15pt}] (4.3,2.5) -- (8.3,2.5) node
+  [midway,yshift=0.8cm]{Clock cycle};
+
+  \foreach \i in {0,4,8} {
+  \node [] at (\i+1,-0.3) () {Propagate};
+  % \node [blue] at (\i+3,-0.5) () {Run};
+}
+
+\end{tikzpicture}}
+\caption{Illustration of the SME concept of the clock cycle}
+\label{fig:smeclock}
+\end{figure}
+
+
+% Even though you may already have realized the properties and components of the
+% SME model, we give a more formal introduction here.
+
+% A clock signal has four different states. Its either low, raising, high or
+% falling. Conceptually, SME processes reads their input on the raising edge, then
+% does computation, before writing the result of the communication.
+
+% As referenced previously, the CSP concept of external choice was not found to be
+% a good fit for hardware design, The key insight of the SME model is the concept
+% of a \textit{hidden clock}
+
+
+\subsection{An intuition}
+While describing the semantics of message propagation in SME is simple, gaining
+an intuitive sense of globally synchronous signal propagation semantics is
+harder. We therefore show an example of a simple network, seen in
+\Cref{fig:smeint}. We return to a slight variation of this example later, but
+for now, the network consist of two processes $P_1$ and $P_2$ and two buses
+connecting them, $b_1$ and $b_2$. In this network, a value is passed around in a
+circular fashion. The $P_1$ and simply forwards the value it receives while the
+$P_2$ process increments it by 1. In \Cref{tab:trace} we see the actual values
+read and written by every process for every iteration. The arrows denote the
+operation performed. A process can either {\itshape write into} or {\itshape
+  write from} a bus. So, the operation $P_1 \rightarrow b_1$ means that $P_1$
+writes to $b_2$. The reading-ends of all buses initially start out as 0. Thus,
+in the first cycle all processes both reads and write 0. In the second cyckle
+\begin{figure}
+  \centering
+  \resizebox{.7\linewidth}{!}{
+    \begin{tikzpicture}[font=\tiny,
+      proc style/.style={circle,draw=black,align=center,text
+        width=1cm,minimum size=1cm,align=center}
+      ]
+      \node[proc style] (impl) {SME implementation};
+      \node[proc style,right=0.7cm of impl] (sim) {Simulation};
+      \node[proc style,right=1cm of sim] (tb) {Test bench};
+      \node[proc style,above=0.5cm of tb] (trace) {CSV trace};
+      \node[proc style,below=0.5cm of tb] (code) {VHDL Code};
+
+      \node[gray,draw=gray,proc style,right=1cm of tb] (verifies) {Verifies};
+
+
+      \draw[-{Latex[scale=1.6]}] (impl) edge [] (sim);
+      \draw[-{Latex[scale=1.6]}] (sim) edge [] (trace);
+      \draw[-{Latex[scale=1.6]}] (sim) edge [] (tb);
+      \draw[-{Latex[scale=1.6]}] (sim) edge [] (code);
+
+     \draw[-{Latex[scale=1.6]}] (trace) edge [gray, bend left=20] (verifies);
+     \draw[-{Latex[scale=1.6]}] (tb) edge [gray] (verifies);
+     \draw[-{Latex[scale=1.6]}] (verifies) edge [gray, bend left=20] (code);
+ 
+    \end{tikzpicture}
+    }
+    \caption{A simplified overview of the steps taken by a SME implementation
+      from  }
+  \label{fig:smeflow}
+\end{figure}
+
+\section{Implementations}
+A number of different SME implementations exists
+
+\subsection{\nth{1} PySME}
+
+The initial implementation of SME was extremely simple: A mere 69 \gls{sloc} of
+Python was all that was needed to create a library allowing Python programs to
+be written following the SME model. This implementation was, of course, quite
+rudimentary, however, it underlines a key advantage of the SME model. A person
+can both understand the model and write a simulator from scratch in less than a
+day.
+
+Initially, SME was only used for simulation and prototyping of hardware
+designs. The completed prototypes were then manually translated to
+\gls{vhdl}. This was a tedious process, but it showed that performing such a
+translation was viable and that implemeting. Automating this translation was
+then the next focus
+
+
+\subsection{\nth{2} PySME}
+
+\subsection{C\# SME}
+Based on the ``new'' version of SME which discarded the CSP-like channels in
+favor of the more general ``bus'' concept, a version of SME for C\# was also
+created. 
+
+\subsection{\nth{3} PySME}
+Based on the success of translating SME models written in C\# to VHDL, a project
+was started to bring the same capability to the Python version of SME. We
+briefly mentioned this project in the introduction and touched upon the related
+challenges. 
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../master"
+%%% End:

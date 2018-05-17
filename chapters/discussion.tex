@@ -1,0 +1,50 @@
+\chapter{Discussion}
+
+In the previous chapters, we have described a new language for representing SME
+networks, SMEIL and how its implementation fits into the greater whole
+\todo{rewrite}. The questions that are left to answer now are, what have we
+achieved by doing so? Is SMEIL suitable for the current SME ecosystem, and
+finally, 
+
+\section{Completeness of SMEIL in relation to SME}
+In this section, we try to provide some insight into whether the SMEIL provides
+a {\itshape complete} representation of the SME model. Let us first conclude
+what 
+
+\section{Generality of SMEIL in relation to SME}
+Did we reach our goal of
+
+
+\section{Relation with other HDLs}
+Discuss how SME and specifically SMEIL relates to other similar ``simple''
+hardware description languages. \todo{Should this be here?}
+
+\section{Related co-simulation approaches}
+\todo{Should this be here}
+
+\section{Comparison with ``state-of-the-art'' SME}
+Write about: Internal buses: We have language support based on inference from
+usage, but not implemented. Arrays as busses
+
+\section{Target Language Support}
+We have currently only implemented a single language backend for SMEIL:
+VHDL. However, compiling SMEIL to other languages, such as C++ (see
+\cite{skovhede2017c++}) is also desirable. Furthermore, \libsme is written with
+support for multiple target languages in mind, and the infrastructure to add
+another target language is in place, but unfortunately time constraints did not
+allow us to do it. Specifically in relation to other HDLs such as Verilog. Most
+new high-level HDLs is able to generate at lest VHDL and Verilog. SME is
+currently only translatable to VHDL, however, adding support for Verilog is
+entirely possible. To support this claim, we point
+to \begin{inparaenum}[a)]\item The large number of tools (e.g. \todo{cite})
+  )already supporting both languages and \item numerous \todo{cite} \todo{Why do
+    we think its simple to add another language?} We have not assessed the
+  practicality of transforming SMEIL to languages following other paradigms,
+  such as functional languages or alternative hardware description
+  languages. However, such languages is outside the scope of the thesis.
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-command-extra-options: "-enable-write18"
+%%% TeX-master: "../master"
+%%% End:

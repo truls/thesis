@@ -1,0 +1,87 @@
+\RequirePackage[l2tabu,orthodox]{nag}
+%
+\documentclass[oneside,a4paper,oldfontcommands]{memoir}
+
+%\newsubfloat{figure}
+
+\input{settings}
+\input{misc/acronyms.tex}
+\makeglossaries
+
+% \headstyles{ell}
+\chapterstyle{ell}
+
+% Use sans-serif font
+\renewcommand{\kufrontfont}{\sffamily}
+
+\project{\mdseries\LARGE Master's Thesis}
+\author{Truls Asheim -- {\ttfamily truls@asheim.dk}}
+%\title{A Common Intermediate Representation of Synchronous Message ExchangeNetworks}
+%\title{This is a title}
+\title{A Domain Specific Language for Synchronous Message Exchange Networks}
+%\subtitle{ }
+\date{May 2018}
+\supervisor{Supervisors: Brian Vinter and Kenneth Skovhede}
+
+\begin{document}
+
+\frontmatter
+
+\begin{titlingpage}
+\maketitle
+\end{titlingpage}
+
+\newpage
+\pagestyle{plain}
+\begin{abstract}
+  Synchronous Message Exchange (SME) is a CSP-derived model for hardware designs
+  implementing globally synchronous message passing. SME implementations
+  currently exist for several general-purpose languages, some of which, are
+  translatable to VHDL for subsequent implementation on hardware. A common SME
+  language could reduce the duplication and feature disparity present in these
+  independent implementations. This thesis introduces a domain-specific language
+  for implementing SME designs. It is usable both as a primary implementation
+  language for SME models and as an intermediate target for general-purpose
+  languages. We describe the language, its implementation and its
+  features. Furthermore, we explain the specific requirements for a language
+  within this domain. Finally, we evaluate the language through a number of
+  simple, but realistic, hardware designs by showing how they may be implemented
+  and tested.
+\end{abstract}
+\newpage
+
+
+\newpage
+\tableofcontents
+
+\printglossary[type=\acronymtype,title=Abbrevations]
+
+% \chapter{Preface}
+% This thesis is submitted in fulfillment of the degree {\it Master of Computer
+%   Science} for Truls Asheim.
+
+\mainmatter
+
+\input{chapters/introduction}
+\input{chapters/sme}
+\input{chapters/hdls}
+%\input{chapters/analysis}
+\input{chapters/smeil}
+\input{chapters/cosim}
+\input{chapters/codegen}
+\input{chapters/implementation}
+\input{chapters/evaluation}
+\input{chapters/discussion}
+\input{chapters/conclusion}
+
+%\microtypesetup{protrusion=true}
+\printbibliography{}
+
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% TeX-command-extra-options: "-enable-write18"
+%%% End:

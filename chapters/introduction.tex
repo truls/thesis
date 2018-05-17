@@ -1,0 +1,291 @@
+\chapter{Introduction}
+
+Special-purpose hardware has a wide range of different uses and can provide a
+significantly improved performance-to-watt ratio compared to GPGPUs and CPUs for
+many applications. Unfortunately, the prevalence of such hardware is limited, in
+part, by poor design tools. Traditional hardware design workflows utilize
+{\itshape Hardware Description Languages} (HDLs) such as \gls{vhdl} or Verilog
+which require the programmer to specify the hardware design at a very low
+level. While this enables complete control over the resulting hardware, the
+productivity sacrifice is significant when compared to using general-purpose
+languages for writing software. Additionally, all aspects of a hardware design
+are often written in a HDL, including code for testing and
+verification. Traditional HDLs are fundamentally unfit for performing tasks
+commonly needed for simulating input for a design, such as reading and decoding
+an image file. Performing them are tedious at best and impossible at worst.
+
+In the past few decades, there has been a significant interest in tools that
+improve the productivity of hardware design workflows. Vendors of reconfigurable
+hardware have focused primarily on {\itshape High-Level Synthesis} (HLS). These
+utilities transform algorithmic descriptions written in a general-purpose
+language to an HDL-description that can be implemented on hardware. The source
+languages for the most common HLS tools are C (e.g. Vivado HLS~\cite{vivadohls})
+and OpenCL (e.g. Altera OpenCL~\cite{aocl}).
+
+Hardware is inherently parallel, and utilizing this parallelism is imperative
+for achieving good performance. Therefore, efficiently transforming sequential C
+code to a hardware description requires inferring parallelism in a similar
+manner to, for example, OpenMP. To control the transformation, the programmer is
+required to add annotations to the C program. The quality and performance of the
+resulting hardware implementation depend greatly on the aptitude of the
+programmer to add these annotations correctly. This requires a deep
+understanding of the transformation process and the underlying architecture of
+the targeted hardware. The difficulties of creating auto-parallelizing compilers
+for impure general-purpose languages are
+well-known~\cite{banerjee1976data,bodik2000abcd} in particular due to the
+challenges of resolving data dependencies. HLS utilities provide no
+revolutionary improvements in this regard and thus have a tendency to retain
+major sequential parts of the original program causing an inefficient hardware
+design.
+
+Transforming OpenCL programs to hardware descriptions is a related scheme which
+is currently gaining popularity. This option seems more attractive as OpenCL is
+already an explicitly parallel language targeting heterogeneous computing
+platforms. However, OpenCL code needs to be tuned specifically to each target
+platform in order to achieve optimal performance~\cite{chen2012using}. Most
+existing OpenCL programs are written with GPGPUs in mind. Thus, these programs
+must be rewritten to perform optimally on FPGAs, again requiring heavy use of
+annotations. This reduces the portability and productivity advantages of OpenCL.
+% Furthermore, OpenCL is most efficient when
+% applied to problems which exhibit a high-degree of data parallelism, but
+% problems exhibiting other kinds of concurrency are more difficult to
+% model.\todo{Is this right?}.
+Furthermore, the OpenCL computing model requires the presence of a host device
+which makes it unsuitable for creating completely independent hardware
+components.
+
+To approach this problem from a different angle, the Synchronous Message
+Exchange (SME) model\cite{vinter2015bus,vinter2014synchronous} has been
+introduced previously. SME is similar to CSP~\cite{csp}, but replaces the
+asynchronous communication of CSP with globally synchronous message passing
+between processes driven by a hidden clock.
+% This communication model mimics hardware where all signal propagations
+% are also globally synchronous, driven by a clock.
+This allows the programmer to be explicit about concurrency, using a model which
+closely resembles signal propagation in hardware. Thus, SME simplifies
+performance reasoning compared to the HLS approaches described above.
+
+As the implementations of SME has advanced, it has been utilized to create
+several successful hardware designs which have been implemented on FPGAs. For
+example, a MIPS processor implemented in SME was successfully synthesized and
+implemented on an FPGA~\cite{johnsen2017thesis}. These achievements have
+motivated and encouraged the continuing development of the model and related
+utilities, although we do not claim that it has reached the level of maturity of
+the HLS approaches previously mentioned.
+
+SME by itself is just a model, which is not tied to a specific programming
+language or implementation. Currently, libraries for implementing SME models
+exist for the general-purpose languages C++~\cite{asheim2015},
+C\#~\cite{skovhede2016building} and Python~\cite{asheim2016vhdl}. The latter two
+have code-generation backends targeting VHDL. In practice, it has proven
+impossible to maintain feature parity between these independent implementations
+due to the code-duplication involved. This created a demand to unify the common
+backend components of these divergent code bases. To achieve this, a common
+intermediate language for SME networks was needed. Combining SME networks
+written in different source languages was also a desired feature. While we could
+feasibly introduce an interface allowing this between Python and C\#, the number
+of required interfaces increase exponentially for every language added. Having a
+common intermediate language would make this integration simple.
+
+This thesis introduces the SME Implementation Language (SMEIL, pron. ``smile'')
+and its accompanying implementation, \libsme{}~\cite{libsme}.
+% SMEIL is an attempt to provide the best of both worlds
+% by separating the actual hardware description and assigning them to the best
+% suited languages.
+SMEIL is a specialized language, featuring a familiar C-like syntax and
+structural constructs which are deeply rooted in the SME model. Furthermore, it
+provides a type-system which is tailored for hardware-specific subtleties that
+are difficult to express in general-purpose languages without deviating from
+established paradigms. An explicit design goal of SMEIL is to allow a simple and
+straight-forward mapping of code structures commonly found in imperative
+general-purpose languages.  For testing designs implemented in SMEIL,
+general-purpose languages are well suited since their full range of available
+libraries can be utilized. \libsme{} provides a simple, language-independent,
+API allowing SME implementations written for general-purpose languages to
+communicate with SME networks written in SMEIL.
+
+Although SMEIL was initially intended purely as an intermediate language target
+for existing SME implementations, the resulting language has additionally proven
+to be usable as an independent primary implementation language for SME
+models. The remainder of the thesis will primarily describe the language from
+this perspective. To show its use as an intermediate language, we have adapted
+our previous implementation of a Python SME to VHDL compiler~\cite{almique} to
+output SMEIL instead of VHDL directly. This is discussed in \Cref{sec:smeilil}.
+
+
+\section{Motivations for a SME DSL}
+\label{sec:smemot}
+
+Initially, we considered just creating a common Abstract Syntax Tree (AST)
+representation. This approach would focus on generalizing the existing ASTs
+already used internally by the PySME and C\# SME to VHDL transformers. An
+advantage of this strategy is that it carries a smaller implementational burden
+compared to creating a dedicated language. However, no simple and established
+frameworks exist for formally specifying an AST in a language-neutral way. A
+representation without a corresponding concrete syntax would also be difficult
+to understand and reason about, making it hard to verify the correctness of the
+generated intermediate code.
+
+At this point, the language had a concrete syntax of its own and fulfilled the
+original design goal of providing a direct mapping of constructs from common
+general-purpose languages. The reason for this design goal was to ensure that
+adding new SME frontends would be as simple as possible, relieving them of
+having to perform sophisticated transformations. Thus, SMEIL inevitably became
+an independent DSL suitable as a primary implementation language for SME
+models. Exploring the concept of an independent SME DSL is interesting for a
+number of reasons. In particular, A DSL allows concise and elegant expression of
+concepts present in the target domain---the domain-specific needs of hardware
+are not considered in the design of general-purpose software languages.
+
+\paragraph{C\# SME.}
+Translating SME models written in C\# is comparatively straight-forward since
+language properties can be statically specified and are enforced by the
+compiler. For example, if we declare a variable as being constant, we can be
+sure that its value will never change beyond its initial assignment and
+fixed-length arrays may be explicitly created as such. Likewise, when we declare
+a variable to be of a certain type, we can be sure that it will keep that type
+throughout the program. Being able to specify such restrictions is immensely
+useful as the transformation target (a hardware description), is also
+static. However, this also means that hardware-targeted SME models written in
+C\# contains a lot of declarational ``noise'' required to confine the C\#
+language to a feature set which is possible to implement on hardware. Since the
+C\# syntax cannot be extended to natively declare SME elements, annotations are
+required to inform the SME runtime and translation system about how a C\# object
+should be interpreted.
+
+
+\paragraph{PySME.}
+The situation is different for languages such as Python. The key selling point
+of Python is that it is a high-productivity language which is simple to use. It
+largely owes these attributes to the fact that it is a dynamic
+language. However, this makes it challenging to determine the static properties
+needed in a hardware description from a Python program without imposing a heavy
+annotational burden. Furthermore, building upon our C\# example from before,
+ensuring that a Python variable retains its type throughout program execution
+require either sophisticated analyses or strong programmer discipline. Being
+able to provide such guarantees is a prerequisite for performing a semantically
+unchanged transformation. We base these assertions on our previous experience
+building a Python SME to VHDL compiler~\cite{asheim2016vhdl}. While we were able
+to transform SME networks written in Python to VHDL, the programmer could only
+use a narrow and strictly specified subset of Python in the hardware-targeted
+processes. The addition of unfamiliar features (annotations), and required
+re-learning of semantic assumptions, reduces the advantage of Python from the
+perspective of an experienced Python programmer. It is certainly possible to
+improve on our previous attempt at transforming Python. However, this is a
+significant effort which does not directly contribute to the capabilities of SME
+as a hardware design utility.
+
+% An extreme example of why Python is not always a good ideas is SysPy which uses
+% python in a way that almost word-for-word mirrors VHDL and its idiosyncrasies;
+% this is exactly what SME is trying to avoid!
+
+% To summarize these assessments, our underlying conjecture is that the underlying 
+
+The key advantage of writing SME models in a general-purpose language is that
+test-benches can utilize the full range of libraries available for that
+language. It is crucial that this advantage is maintained for SME networks
+written in SMEIL. We explain how this is achieved in \Cref{sec:cosim} . A common
+objection towards DSLs is the requirement of learning a new and unfamiliar
+language. However, the SME model itself needs to be learned in any case and the
+additional overhead SMEIL imposes is minimal. From first-hand experience, a
+student of computer science familiar with CSP, but not SME, was able to start
+writing simple SMEIL programs after just a few hours of introduction.
+
+Due to its origins as an intermediate language, its syntax is not the
+friendliest in the world. The syntax attempted to strike a balance between being
+simple to parse while not being completely unreadable for humans.
+
+\section{Limitations}
+This thesis does not discuss the low-level details of hardware design beyond a
+brief introduction to hardware design workflows. As previously mentioned, the
+feasibility of SME as a hardware design tool has already been established
+through previous successful implementations. The problems addressed in this
+thesis are purely related to the SME model and the results of our work does not
+alter the {\itshape fundamental} advantages and disadvantages of SME as a
+hardware design tool.
+
+
+\section{Contributions}
+We summarize the contributions of the thesis as follows
+
+\begin{itemize}
+\item We present a new language for implementing SME networks. The language is
+  suitable both as a primary implementation language for SME networks and as an
+  intermediate language for other SME implementations.
+\item We provide a way to test implementations written in the language using a
+  co-simulation approach  
+\item We provide a method in which the minimally required bit-widths of wires in
+  the final design can be derived from the observed range of values assigned to
+  them during simulation.
+\end{itemize}
+
+A shortened version of this thesis has been submitted for publication as
+\todo{todo}
+
+\section{Notation and Definitions}
+We frequently refer to hardware-design nomenclature: A {\itshape test-bench} is a
+piece of software used for testing a hardware model by providing input data and
+verifying its output. {\itshape Synthesis} is the process of transforming a
+hardware-model written in a HDL to an actual description which can be
+implemented on hardware. We will occasionally refer to ``assigning a
+value''. The ``value'' here may, unless specified otherwise, be any assignable
+SMEIL construct (either a variable or a bus channel).
+
+
+
+% \section{Contributions}
+% I summarize the contributions of this thesis as follows.
+
+% \begin{itemize}
+% \itshapeem I present a new Domain Specific Language, \gls{smeil}, which supports
+%   implementing \gls{sme} networks. This language is suitable both as a primary
+%   implementation language for \gls{sme} networks and as an intermediate language
+%   which may be targeted by other implementations of \gls{sme}. This language can
+%   be used as part of several design workflows. It may be used both in complete
+%   isolation where the \gls{smeil} program alone produces a \gls{vhdl} hardware
+%   description. It can also be used in conjunction with other languages.
+
+% \itshapeem This language is presented in the context of the history of \gls{sme} and
+%   we present its tradeoffs related to lessons learned and choices made by
+%   previous \gls{sme} implementations.
+
+% \itshapeem We show how networks written in \gls{smeil} can interface with \gls{sme}
+%   frameworks written in general-purpose language, providing what we refer to as
+%   co-simulation. By doing this, we mitigate the poor separation-of-concern
+%   (described above) applying to both dedicated \gls{hdl}s and
+%   \gls{gpl}'s. Through examples, we underpin the generality of this interface.
+
+% \itshapeem We lay the building blocks for creating libraries of reusable \gls{sme}
+%   components by presenting a module system for \gls{smeil}. In particular, we
+%   establish the generality of \gls{smeil} by showing that such modules may be
+%   combined regardless of the source language that produced the \gls{smeil}.
+
+% \itshapeem We substantiate the feasibility of \gls{smeil} as an intermediate language
+%   by showing that the high-level nature of \gls{smeil} easily supports
+%   translation from and into several different languages.
+
+% \itshapeem We argue for the advantages of using a \gls{dsl} over general-purpose languages
+% by...
+
+% \itshapeem As evidence, we supply a core compiler and simulator implementation,
+%   written in Haskell, together with related library extensions to the PySME
+%   library and Almique which embodies the qualities listed above. Furthermore,
+%   C\# \gls{sme} was kindly extended by Kenneth Skovhede to support translation
+%   to \gls{smeil}. The implementation is complete and functional and strives to
+%   be of production quality. We spare the reader from further
+%   implementation-specific details as these are often the least interesting parts
+%   of a report like this. However, we refer to the supplied documentation for
+%   details about how to use the supplied code.
+
+% \itshapeem We show the suitability of the language for its intended purpose by
+%   showing the simplicity of which a variety of different preexisting \gls{sme}
+%   applications may be implemented in \gls{smeil}
+% \end{itemize}
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../master"
+%%% TeX-command-extra-options: "-enable-write18"
+%%% End:

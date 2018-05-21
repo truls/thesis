@@ -1,29 +1,32 @@
 \chapter{Evaluation}
+\label{eval}
 
-In this section, we first present an example of SMEIL used as an \gls{il}
-followed by four simple examples implemented in SMEIL: A model watch using a
+In this chapter, we first present an example of SMEIL used as an \gls{il}
+followed by four small examples implemented in SMEIL: A model watch using a
 7-segment display, the core of a trading chip, a process for binning colors
-based on intensity and finally an MD5 hash bruteforcer.
+based on intensity and finally an MD5 hash bruteforcer.  \todo{Motivate why
+  these examples were picked in particular}
 
-\todo{Motivate why these examples were picked in particular}
+Information on how to reproduce the runs shown below is given in \Cref{app:inst}.
+
 
 \section{SMEIL as an intermediate language}
 \label{sec:smeilil}
-We have made repeated references to the origins of SMEIL as a pure intermediate
-language \gls{il} and described how and why the scope of the language was
-widened to also include use as an independent implementation language. Despite
-this, SMEIL is still very much intended to be also usable as an \gls{il}. As it
-may be obvious at this point, the design, implementation and testing have mostly
-focused on its use as a primary implementation language, with the \gls{il} angle
-remaining in the background. Ideally, we would have a code generation backend
-for C\# at this point, targeting SMEIL, since that is the most complete SME
+We have made repeated references to the origins of SMEIL as a pure \gls{il} and
+described how and why the scope of the language was widened to also include use
+as an independent implementation language. Despite this, SMEIL is still very
+much intended to be also usable as an \gls{il}. As it may be obvious at this
+point, the design, implementation and testing have mostly focused on its use as
+a primary implementation language, with the \gls{il} angle remaining in the
+background. Ideally, we would have a code generation backend for C\# at this
+point, targeting SMEIL, since that is the most complete SME
 implementation. However, this was not possible within the available time-frame
 and in any case the implementation would need to be carried out by a third party
---- your present author is not sufficiently familiar with the C\# SME framework
-to carry out the work himself. In the end, time had to be prioritized and the
-time required to show a functioning proof-of-concept using SMEIL as an
-intermediate language would have sacrificed significant parts of the
-co-simulation interface.
+--- your present writer is not sufficiently familiar with the C\# SME framework
+to carry out the work himself within a reasonable time frame. In the end, time
+had to be prioritized and the time required to show a functioning and automated
+proof-of-concept using SMEIL as an intermediate language would have sacrificed
+significant parts of the co-simulation interface.
 
 It is never ideal to leave loose ends, so to show that using SMEIL as an
 \gls{il} {\itshape can} be done we have adapted our previously implemented
@@ -31,9 +34,151 @@ Python to \gls{vhdl} compiler to generate SMEIL instead of generating VHDL
 directly. This translation is not yet fully automated, but we explain how it
 could be done here, and that doing it is in fact quite feasible.
 
-As an example, we will show how the AllOps network is translated from PySME to
-SMEIL. This implementation was first presented in~\cite{asheim2016vhdl} and is
-used here unmodified. \todo{Show the translation}
+As an example, we will show how the SomeOps network is translated from PySME to
+SMEIL. This network, shown in \Cref{fig:someops}, is configured as follows. A
+generator process continuously emits two numbers through a shared bus. Two
+processes are connected to the reading end of the bus which add and multiply the
+numbers respectively. The results of the calculation is then printed by the
+Printer process. The PySME code of the network is shown in \Cref{fig:someopspy}.
+
+The example is a shortened version of an example named AllOps which additionally
+performed division and multiplication.
+% Since this code uses a slightly older
+% version of the PySME library, we will briefly describe the differences between
+% the PySME code used in this example and the PySME code appearing elsewhere in
+% the thesis.
+The code uses a slightly older version of the PySME library than is used
+elsewhere in this thesis which has some minor differences, for example, the
+{\ttfamily self.tell} function which was renamed to {\ttfamily self.add}.  SME
+processes are declared using a class extending one of the classes {\ttfamily
+  External} or {\ttfamily Function}. The two classes are semantically identical,
+but are used to indicate if a process is intended purely for simulation or for
+hardware synthesis, respectively. Thus, {\ttfamily External} processes are
+expected to utilize code constructs not re presentable on hardware.  The
+translator therefore handled them by simply generating empty entity declarations
+in their place. This implementation was first presented in~\cite{asheim2016vhdl}
+and is shown here with very minor modifications.
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{figures/someopsnet.pdf}
+  \caption{Schematics of the SomeOps network. Figure from \cite{asheim2016vhdl}.}
+  \label{fig:someops}
+\end{figure}
+
+\begin{widefigure}
+  \begin{subfigure}[t]{0.49\textwidth}
+  \begin{pythoncode}
+from sme import *
+t = Types()
+
+class Producer(Function):
+  def setup(self, ins, outs):
+    self.map_outs(outs, "outp")
+    self.v1 = 0  # type: t.u7
+    self.v2 = 0  # type: t.u7
+
+  def run(self):
+    self.outp["val1"] = self.v1
+    self.outp["val2"] = self.v2
+    self.v1 += 1
+    self.v2 += 1
+    if self.v1 > 100:
+      self.v1 = 0
+      self.v2 = 0
+
+class Add(Function):
+  def setup(self, ins, outs):
+    self.map_ins(ins, "valbus")
+    self.map_outs(outs, "addbus")
+
+  def run(self):
+  self.addbus["res"] = self.valbus["val1"] +
+             self.valbus["val2"]
+
+class Mul(Function): # Snipped (similar to Add)
+
+class Printer(External):
+  def setup(self, ins, outs):
+    self.map_ins(ins, "addbus", "mulbus")
+
+  def run(self):
+    print(self.addbus["res"],
+          self.mulbus["res"])
+
+class SomeOps(Network):
+  def wire(self):
+    valbus = Bus("ValueBus", [t.u7("val1"),
+                              t.u7("val2")])
+    valbus["val1"] = 0
+    valbus["val2"] = 0
+    addbus = Bus("AddBus", [t.u8("res")])
+    addbus["res"] = 0
+    mulbus = Bus("MulBus", [t.u14("res")])
+    mulbus["res"] = 0
+    prod = Producer("Producer", [], [valbus])
+    add = Add("Add", [valbus], [addbus])
+    mul = Mul("Mul", [valbus], [mulbus])
+    printer = Printer("Printer",
+                      [addbus, mulbus], [])
+    self.tell(printer) # 6x self.tell snipped
+# Main function snipped
+\end{pythoncode}
+\caption{Original Python SME code.}
+\label{fig:someopspy}
+\end{subfigure}
+\begin{subfigure}[t]{0.49\textwidth}
+  \begin{smeilcode}
+sync proc Add (in valbus, out addbus)
+{
+    addbus.res = valbus.val1 + valbus.val2;
+}
+
+sync proc Mul (in valbus, out mulbus)
+{
+    mulbus.res = valbus.val1 * valbus.val2;
+}
+
+sync proc Printer (in addbus, in mulbus)
+{
+    // Manually added
+    trace("Add result: {} Mul result: {}",
+        addbus.res, mulbus.res);
+}
+
+sync proc Producer (out outp)
+    var v2: u7 = 0;
+    var v1: u7 = 0;
+{
+    outp.val1 = v1;
+    outp.val2 = v2;
+    v1 = v1 + 1;
+    v2 = v2 + 1;
+    if (v1 > 100) {
+        v1 = 0;
+        v2 = 0;
+    }
+}
+
+network SomeOps ()
+{
+    exposed bus AddBus {res: u8;};
+    exposed bus MulBus {res: u14;};
+    exposed bus ValueBus {val1: u7;
+                          val2: u7;};
+    instance Add of Add(ValueBus, AddBus);
+    instance Mul of Mul(ValueBus, MulBus);
+    instance Printer of Printer(AddBus, MulBus);
+    instance Producer of Producer(ValueBus);
+}
+
+\end{smeilcode}
+\caption{Generated SMEIL code.}
+\label{fig:someopssme}
+\end{subfigure}
+\caption{Example of PySME code automatically translated to SMEIL.}
+\end{widefigure}
 
 
 \section{7-Segment Display}
@@ -141,7 +286,7 @@ used here unmodified. \todo{Show the translation}
   drive. This network is implemented purely in SMEIL without depending on
   external processes for stimuli.
 
-  \begin{figure}
+  \begin{widefigure}
     \centerfloat
 \begin{lstlisting}[multicols=2, language=smeil]
 proc timer ()
@@ -221,7 +366,7 @@ network clock() {
 \end{lstlisting}
   \caption{Code of the 7-segment digital watch network.}
   \label{fig:7segcode}
-\end{figure}  
+\end{widefigure}  
 
 \section{ColorBin}
 \label{sec:colorbin}
@@ -271,9 +416,17 @@ stores the pixel intensity counts for each image. The source code for the
 collector process is shown. The SMEIL source code is shown in
 \Cref{fig:collector}. The VHDL code generated for the process is shown in
 \Cref{fig:vhdlc}. The mapping of names and structure from SMEIL to VHDL is
-clearly seen. As is the immense verbosity of VHDL.
+clearly seen. As is the immense verbosity of VHDL. When we generate expressions,
+we set parentheses in a very pessimistic manner. To ensure that the precedence
+of operators in SMEIL is preserved in VHDL, we set parentheses around every
+binary operation. Unfortunately, this adds some clutter to the generated code in
+the form of unnecessary parentheses. This matter is subject to future
+improvements. For example by implementing the ``unparsing'' method described in
+\cite{ramsey1998unparsing} which, based on knowledge about operator precedence
+in the target language, reverse-transforms an AST using as few parentheses as
+possible.
 
-\begin{figure}
+\begin{widefigure}
 
 \begin{lstlisting}[language=smeil,multicols=2]
 proc collector (in image_input)
@@ -309,11 +462,9 @@ proc collector (in image_input)
 \end{lstlisting}
   \caption{SMEIL source code for the collector process of the ColorBin network.}
   \label{fig:collector}
-\end{figure}
+\end{widefigure}
 
-\begin{figure}[hb!]
-\centerfloat
-  % \makebox[\textwidth][c]{
+\begin{widefigure}[hb!]
 \begin{lstlisting}[language=vhdl]
 entity collector is
   port (
@@ -354,11 +505,11 @@ begin
       end if;
       bin_count_out_low <= resize(countlow, bin_count_out_low'length);
       -- [..]
-\end{lstlisting}%}
+\end{lstlisting}
   \caption{The VHDL code generated from the SMEIL code shown in
     \Cref{fig:collector}.}
   \label{fig:vhdlc}
-\end{figure}
+\end{widefigure}
 
   
 \section{High-frequency trading chip}
@@ -434,9 +585,8 @@ Python libraries. The brownian bridge generator is implemented using NumPy while
 the plot is made using matplotlib. Implementing these test processes in VHDL
 would be a massive undertaking, With Python, it is quite simple.
 
-\begin{figure}
-
-\begin{lstlisting}[language=smeil, multicols=2]
+\begin{widefigure}
+  \begin{smeilcode2}
 sync proc calc (in data, const decay)
   bus result {
     val: int;
@@ -493,11 +643,11 @@ network ewma () {
        short: short.result,
        res: output);
 }
+\end{smeilcode2}
+\caption{SMEIL source code for the trader core.}
+\label{fig:tradesrc}
 
-\end{lstlisting}
-  \caption{SMEIL source code for the trader core.}
-  \label{fig:tradesrc}
-   \end{figure}
+\end{widefigure}
 
 \section{MD5 bruteforcer}
 \begin{figure}%[tb]
@@ -556,9 +706,9 @@ process receives the string that should be hashed through the bus passed as its
 {\ttfamily input} parameter. The calculated hash is then sent on the {\ttfamily hashes} bus
 which is read by the verification process.
 
-\begin{figure}
+\begin{widefigure}
 
-\begin{lstlisting}[language=smeil, multicols=2]
+\begin{smeilcode2}
 proc md5(in input)
   bus hashes {
     h0: u32;
@@ -628,11 +778,11 @@ hashes.w0 = w[0];
 hashes.w1 = w[1];
 }
 
-\end{lstlisting}
+\end{smeilcode2}
   \caption{SMEIL source code for the MD5 hashing process.}
   \label{fig:smeilhash}
 
-\end{figure}
+\end{widefigure}
 
 \section{Performance}
 The simulation performance of a hardware design tool is not essential as it does

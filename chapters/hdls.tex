@@ -1,6 +1,93 @@
-\chapter{Hardware Description Languages}
-\todo{Write this}. Give a brief overview of a hardware design workflow and give
-an overview of especially VHDL as this is discussed here repeatedly.
+\section{Motivations for Custom Hardware}
+% \todo{Write this}. Give a brief overview of a hardware design workflow and give
+% an overview of especially VHDL as this is discussed here repeatedly.
+
+% %Basic hardware architecture -- gate level
+
+% %FPGAS -- Reconfigurability, LUTs, BRAM, m.m.
+
+% %Programming models -- HDLs (VHDL), ..
+
+% \todo{This needs a shitload of references}
+
+% This section is an attempt to give a more in-depth motivation of why 
+
+%\subsection{A brief history}
+Digital circuits are fundamentally a collection of logic gates which are
+connected in a specific configuration to perform a particular purpose. In
+Integrated Circuits (ICs), this configuration is hard-wired -- etched into
+silicon using a lithographic process. An example of a hard-wired IC is the
+common Central Processing Unit (CPU). CPUs are highly versatile devices, capable
+of computing anything computable. While this versatility is their main
+advantage, it also mean that they excel at nothing.
+% \todo{mention von
+%   neumann}\footnote{To keep this short, we don't discuss the widely available
+%   Single Instruction Multiple Data (SIMD) instruction sets such as 3Dnow!, MMX,
+%   SSE and AVX. These implement data-level parallelism in a restricted
+%   manner}.
+Since the advent of the first microprocessor, almost 5 decades ago, this problem
+has been widely recognized. Therefore, a steadily increasing amount of
+special-purpose hardware is being added in order to relieve the CPU of common
+and computationally intensive task. An early, and highly successful, example of
+this is the introduction of co-processors for performing floating-point
+calculations. As personal computers were increasingly being used for tasks
+relying heavily on floating-point arithmetic, emulating this in software
+increasingly became a limiting factor for performance. To solve this,
+specialized hardware units, known as Floating Point Units (FPU) were added to
+significantly speed up floating point calculations compared to what was possible
+using software emulation. Numerous similar examples exists, for example the
+AES-NI instruction set built into recent CPUs, providing access to specialized
+circuitry for performing encryption and decryption using the ubiquitous Advanced
+Encryption Standard (AES) algorithm.
+
+The current use of specialized hardware only scratch the surface of applications
+for which it would be beneficial. For example, by offering a significantly
+improved performance-per-watt ratio~\cite{fowers2012performance}. This is
+especially important in the light of the
+ever-increasing~\cite{avgerinou2017trends} power consumption of data centers
+which counter global efforts to decrease emissions. In an ideal world, everyone
+would have cheap and easy access to creating hardware specialized for their
+particular application. Unfortunately such hardware, known as Application
+Specific Integrated Circuits (ASICs), is extremely expensive and time-consuming
+to design and put into production and a very large number of units has to be
+ordered before achieving a reasonable cost-per-unit. Also, mistakes are
+expensive since once the hardware is made it can never be changed.
+
+% Another well known example of special-purpose hardware are Graphics Processing
+% Units (GPU) introduced to, as the name suggests, accelerate graphics in
+% computers. Therefore, GPUs are optimized for workloads that are ubiquitous in
+% graphics processing such as bulk operations on arrays. Therefore, GPUs are
+% massively parallel machines, capable of performing a single operation, in
+% parallel on a large set of data.
+
+
+% In 1965 Gordon Moore famously stated that the number of transistors on a single
+% IC would double every year. This is commonly known as Moore's Law and has ensured
+% a steady increase in performance ever since. Today, Moore's law i
+
+\subsection{Field Programmable Gate Arrays (FPGA)}
+Reprogrammable computing, of which Field Programmable Gate Arrays (FPGAs) are
+the only prominent example, offer an attractive compromise between ASICs and
+more general devices such as CPUs or GPGPUs. While not nearly as good as
+ASICs~\cite{kuon2007measuring}, they can provide significant improvements in
+both performance and power-consumption while also offering a significantly lower
+cost.
+
+FPGAs are ICs which allow their circuits to be changed after manufacture (hence,
+they are programmable in the field) and can therefore be reconfigured to fulfill
+any purpose. Of course, the circuitry on the chip cannot be physically changed,
+so FPGAs consists of an array of logic blocks which has configurable
+interconnects. The reprogramming of an FPGA happens by reconfiguring switches
+which determines the signal path. Since the individual components on an FPGA are
+fine-grained, they can be reconfigured for any computational purpose by rewiring
+signal paths.
+
+\subsection{Programming FPGAs}
+As briefly mentioned in the introduction, FPGAs are usually programmed using
+Hardware Description Languages (HDLs) such as VHDL or Verilog. We will focus on
+VHDL here, since that is the current target of SMEIL code generation.
+\todo{finish}
+%VHDL was originally developed as 
 
 %%% Local Variables:
 %%% mode: latex

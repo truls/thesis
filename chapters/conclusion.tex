@@ -126,6 +126,18 @@ explored by the testing stimuli. The downside of this approach is that this
 assumption may be hard to fulfill. To address this, the current approach could
 be augmented by integer range analysis for proving the observed ranges.
 
+To improve the user-friendliness and capabilities of SMEIL, there is a wide
+range of language features that we would like to add. A non-exhaustive list
+follows:
+\begin{itemize}
+  \item In practice, not being able to add declarations, such as constants,
+    enumerations and functions, at the top-level of an SMEIL program proved too
+    restrictive. This should be added.
+  \item A syntax for direct bit manipulations. Currently, bit manipulation can
+    only be performed through bitwise operators in a similar manner to C. It
+    would be convenient to have an array-like syntax for achieving the same
+    thing, for example similar to Python's array slicing feature.
+\end{itemize}
 
 \section*{Conclusion}
 We have presented SMEIL, a DSL for implementing SME networks and demonstrated

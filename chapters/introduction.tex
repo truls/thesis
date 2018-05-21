@@ -56,9 +56,10 @@ components.
 
 To approach this problem from a different angle, the Synchronous Message
 Exchange (SME) model\cite{vinter2015bus,vinter2014synchronous} has been
-introduced previously. SME is similar to CSP~\cite{csp}, but replaces the
+previously introduced. SME is similar to \gls{csp}~\cite{csp}, but replaces the
 asynchronous communication of CSP with globally synchronous message passing
-between processes driven by a hidden clock.
+between processes driven by a hidden clock\footnote{An extended introduction to
+  the SME model is given in \Cref{sec:sme}}.
 % This communication model mimics hardware where all signal propagations
 % are also globally synchronous, driven by a clock.
 This allows the programmer to be explicit about concurrency, using a model which
@@ -180,16 +181,16 @@ as a hardware design utility.
 % this is exactly what SME is trying to avoid!
 
 % To summarize these assessments, our underlying conjecture is that the underlying 
-
-The key advantage of writing SME models in a general-purpose language is that
-test-benches can utilize the full range of libraries available for that
-language. It is crucial that this advantage is maintained for SME networks
-written in SMEIL. We explain how this is achieved in \Cref{sec:cosim} . A common
-objection towards DSLs is the requirement of learning a new and unfamiliar
-language. However, the SME model itself needs to be learned in any case and the
-additional overhead SMEIL imposes is minimal. From first-hand experience, a
-student of computer science familiar with CSP, but not SME, was able to start
-writing simple SMEIL programs after just a few hours of introduction.
+\vspace{1em} The key advantage of writing SME models in a general-purpose
+language is that test-benches can utilize the full range of libraries available
+for that language. It is crucial that this advantage is preserved for SME
+networks written in SMEIL. We explain how this is achieved in \Cref{sec:cosim}
+. A common objection towards DSLs is the requirement of learning a new and
+unfamiliar language. However, the SME model itself needs to be learned in any
+case and the additional overhead SMEIL imposes is minimal. From first-hand
+experience, a student of computer science familiar with CSP, but not SME, was
+able to start writing simple SMEIL programs after just a few hours of
+introduction.
 
 Due to its origins as an intermediate language, its syntax is not the
 friendliest in the world. The syntax attempted to strike a balance between being
@@ -201,8 +202,7 @@ brief introduction to hardware design workflows. As previously mentioned, the
 feasibility of SME as a hardware design tool has already been established
 through previous successful implementations. The problems addressed in this
 thesis are purely related to the SME model and the results of our work does not
-alter the {\itshape fundamental} advantages and disadvantages of SME as a
-hardware design tool.
+alter the {\itshape fundamental} qualities of SME as a hardware design tool.
 
 
 \section{Contributions}
@@ -212,15 +212,24 @@ We summarize the contributions of the thesis as follows
 \item We present a new language for implementing SME networks. The language is
   suitable both as a primary implementation language for SME networks and as an
   intermediate language for other SME implementations.
-\item We provide a way to test implementations written in the language using a
-  co-simulation approach  
-\item We provide a method in which the minimally required bit-widths of wires in
-  the final design can be derived from the observed range of values assigned to
-  them during simulation.
+\item We provide a way to test models written in the language using a
+  co-simulation approach.
+\item We provide a method for deriving the minimally required bit-widths of
+  wires in the final design from the observed range of values assigned to them
+  during simulation.
+\item We demonstrate an implementation of the above points in addition to VHDL
+  code generation from designs written in the introduced language.
 \end{itemize}
 
-A shortened version of this thesis has been submitted for publication as
-\todo{todo}
+\noindent A shortened version of this thesis has been submitted for publication as
+
+\begin{center}
+\begin{minipage}{0.8\textwidth}
+  T. Asheim, “SMEIL: A Domain Specific Language for Synchronous Message Exchange
+  Networks”. In: {\itshape Proceedings of Communicating Process Architectures
+    2018} (2018)
+\end{minipage}
+\end{center}
 
 \section{Notation and Definitions}
 We frequently refer to hardware-design nomenclature: A {\itshape test-bench} is a

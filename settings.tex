@@ -17,6 +17,9 @@
 \usepackage[autostyle]{csquotes}
 \usepackage[acronym]{glossaries}
 \usepackage{todonotes}
+\usepackage{fancyvrb}
+%\usepackage{adjustbox}
+
 % \newminted{c}{fontsize=\small}
 
 
@@ -27,10 +30,25 @@
 
 \usepackage{multicol}
 
+% \newenvironment{blocklisting}[1]
+% {\begingroup\lstset{#1}\VerbatimOut{blocklisting-tmp.txt}}
+% {\endVerbatimOut\begin{block}{Code}\lstinputlisting{blocklisting-tmp.txt}\end{block}\endgroup}
+\newenvironment{smeilcode2}
+{\begingroup\lstset{language=smeil}\VerbatimOut{blocklisting-tmp.txt}}
+{\endVerbatimOut\begin{multicols}{2}\lstinputlisting{blocklisting-tmp.txt}\end{multicols}\endgroup}
 
 %\renewcommand{\ttdefault}{cmtt}
 \newcommand{\libsme}[0]{\textsc{libsme}}
 
+\newcommand{\codemargins}[0]{\paperwidth-2cm}
+
+\newenvironment{widefigure}[1][]{
+  \begin{figure}[#1]
+  \centerfloat
+  \begin{minipage}[t]{\codemargins}
+  }{\end{minipage}
+   \end{figure}
+}
 
 % Define some colors
 \definecolor{mblue}{RGB}{0,0,200}
@@ -171,7 +189,8 @@
   xleftmargin=16pt,
   escapeinside={??}
 }
-
+\lstnewenvironment{smeilcode}{\lstset{language=smeil}}{}
+\lstnewenvironment{pythoncode}{\lstset{language=python}}{}
 
 %%% Local Variables:
 %%% mode: latex

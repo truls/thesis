@@ -8,7 +8,7 @@ of the original SMEIL network.
 \todo{Make more detailed or don't use a separate chapter.?}
 
 \section{Code transformations}
-In the f
+%In the f
 
 The fundamental structure of the SMEIL code is preserved in the generated
 VHDL. One VHDL entity is generated per SMEIL entity and the body a SME process
@@ -23,8 +23,8 @@ test-bench is connected to the {\ttfamily exposed} buses of the SMEIL program. T
 CSV-trace file containing the values recorded during simulation is used by the
 VHDL test bench to drive inputs and verify outputs.
 
-Alongside the generated code, a {\ttfamily Makefile} is generated which simplify
-building and testing the generated code using the GHDL VHDL simulator.
+Alongside the generated code, a {\ttfamily Makefile} is generated for building
+and testing the VHDL code using the GHDL simulator.
 
 Integer types of SMEIL are represented in VHDL using the types provided by the
 standard {\ttfamily ieee.numeric\_std} package. This package provides functions for

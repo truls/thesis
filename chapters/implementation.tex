@@ -1,5 +1,8 @@
 \chapter{\libsme{} design and implementation}
 
+In this section, we present the combined implementation of \libsme{} and
+elaborate on implementation details not mentioned elsewhere.
+
 \section{Methods of interaction}
 \label{sec:using}
 SMEIL programs are run using the {\ttfamily libsme} library either through interaction
@@ -14,9 +17,9 @@ with the C API of the library or by using the provided command line utility.
   created and the generated VHDL code must be manually modified and connected to
   a clock source before it can be tested using a VHDL simulator.
 \item[Pure SMEIL simulation.] This mode only applies to SMEIL networks which
-  contain their own data generation process (see \Cref{sec:7seg} for an example
+  contain their own data generation p rocess (see \Cref{sec:7seg} for an example
   of such a network). SMEIL used like this is not very useful as it can only
-  produce output through {\ttfamily trace} statements (\Cref{sec:trace}).
+  produce output through {\ttfamily trace} statements (\Cref{sec:langref}).
   \item[Co-simulation of SMEIL.] The most common intended usage scenario for
     SMEIL is to use it together with an SME library for a general purpose
     language. We describe this concept in further details in the following
@@ -87,12 +90,12 @@ with the C API of the library or by using the provided command line utility.
   \label{fig:overview}
 \end{figure}
 
+\section{An overview}
+\label{sec:overview}
 In the previous sections, we have described the individual parts of \libsme{}
 without describing its combined data flow. Hence, we devote a section for that
 purpose here. An overview of the \libsme{} library and its interactions is shown
 in \Cref{fig:overview} and the individual steps are described below.
-
-\section{An overview}
 
 \subsection{Parsing and Import Resolution} Regardless of how \libsme{} is
 invoked (see \Cref{sec:using}) the SMEIL source is parsed and the resulting AST
@@ -146,7 +149,8 @@ The type checker makes two passes through the code.
   in the entities of the program. During this process, the individual AST-nodes
   are annotated with their types. \todo{Should there be an example here?} Having
   such type information available throughout the AST is immensely useful for
-  later passes, such as code generation and simulation.
+  later passes, such as code generation and simulation since we are able to
+  determine the type of an expression at any time by looking at its AST node.
 %     For example, suppose
 %     expression {\ttfamily 2 + 6} is represented in an AST as
 % \begin{verbatim}

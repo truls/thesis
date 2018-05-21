@@ -8,14 +8,14 @@
 \input{misc/acronyms.tex}
 \makeglossaries
 
-% \headstyles{ell}
+%\headstyles{ell}
 \chapterstyle{ell}
 
 % Use sans-serif font
 \renewcommand{\kufrontfont}{\sffamily}
 
 \project{\mdseries\LARGE Master's Thesis}
-\author{Truls Asheim -- {\ttfamily truls@asheim.dk}}
+\author{Truls Asheim --- {\ttfamily truls@asheim.dk}}
 %\title{A Common Intermediate Representation of Synchronous Message ExchangeNetworks}
 %\title{This is a title}
 \title{A Domain Specific Language for Synchronous Message Exchange Networks}
@@ -32,15 +32,16 @@
 \end{titlingpage}
 
 \newpage
-\pagestyle{plain}
+%\pagestyle{plain}
 \begin{abstract}
-  Synchronous Message Exchange (SME) is a CSP-derived model for hardware designs
-  implementing globally synchronous message passing. SME implementations
-  currently exist for several general-purpose languages, some of which, are
-  translatable to VHDL for subsequent implementation on hardware. A common SME
-  language could reduce the duplication and feature disparity present in these
-  independent implementations. This thesis introduces a domain-specific language
-  for implementing SME designs. It is usable both as a primary implementation
+  Synchronous Message Exchange (SME) is a Concurrent Sequential Processes
+  (CSP)-derived model for hardware designs implementing globally synchronous
+  message passing. SME implementations currently exist for several
+  general-purpose languages, some of which, are translatable to VHDL for
+  subsequent implementation on hardware. A common SME language could reduce the
+  duplication and feature disparity present in these independent
+  implementations. This thesis introduces a domain-specific language for
+  implementing SME designs. It is usable both as a primary implementation
   language for SME models and as an intermediate target for general-purpose
   languages. We describe the language, its implementation and its
   features. Furthermore, we explain the specific requirements for a language
@@ -60,6 +61,17 @@
 % This thesis is submitted in fulfillment of the degree {\it Master of Computer
 %   Science} for Truls Asheim.
 
+% \chapter{Acknowledgements}
+% First of all, I would like to extend my gratitude towards Brian Vinter and
+% Kenneth Skovhede for this, and previous, highly interesting projects that I
+% have carried out under their supervision. I would also like to thank the
+% eScience group at the Niels Bohr Institute for providing a highly welcoming
+% environment. In particular by offering myself, and the other Master's Thesis
+% students, office space and inviting us along to the strategy retreat. It was
+% highly appreciated! For taking their time to read my thesis and providing
+% insightful comments I would like to thank my lovely proofreaders: Last but not
+% least
+
 \mainmatter
 
 \input{chapters/introduction}
@@ -77,6 +89,8 @@
 %\microtypesetup{protrusion=true}
 \printbibliography{}
 
+\appendix
+\input{chapters/installation}
 
 \end{document}
 

@@ -21,43 +21,70 @@ a primary implementation language, with the \gls{il} angle remaining in the
 background. Ideally, we would have a code generation backend for C\# at this
 point, targeting SMEIL, since that is the most complete SME
 implementation. However, this was not possible within the available time-frame
-and in any case the implementation would need to be carried out by a third party
---- your present writer is not sufficiently familiar with the C\# SME framework
-to carry out the work himself within a reasonable time frame. In the end, time
-had to be prioritized and the time required to show a functioning and automated
-proof-of-concept using SMEIL as an intermediate language would have sacrificed
-significant parts of the co-simulation interface.
+and in any case the implementation would need to be carried out by a third
+party, and this was outside the scope of the thesis.
+% --- your present writer is not sufficiently familiar with the C\# SME framework
+% to carry out the work himself within a reasonable time frame. In the end, time
+% had to be prioritized and the time required to show a functioning and automated
+% proof-of-concept using SMEIL as an intermediate language would have sacrificed
+% significant parts of the co-simulation interface.
 
-It is never ideal to leave loose ends, so to show that using SMEIL as an
-\gls{il} {\itshape can} be done we have adapted our previously implemented
-Python to \gls{vhdl} compiler to generate SMEIL instead of generating VHDL
-directly. This translation is not yet fully automated, but we explain how it
-could be done here, and that doing it is in fact quite feasible.
+%It is never ideal to leave loose ends, so
+To show that using SMEIL as an \gls{il} {\itshape can} be done we have adapted
+our previously implemented Python to \gls{vhdl} compiler to generate SMEIL
+instead of generating VHDL directly. This translation is not yet fully
+automated, but we explain how it could be done here, and that doing it is
+feasible.
 
 As an example, we will show how the SomeOps network is translated from PySME to
-SMEIL. This network, shown in \Cref{fig:someops}, is configured as follows. A
-generator process continuously emits two numbers through a shared bus. Two
-processes are connected to the reading end of the bus which add and multiply the
-numbers respectively. The results of the calculation is then printed by the
-Printer process. The PySME code of the network is shown in \Cref{fig:someopspy}.
+SMEIL.  This implementation was first presented in~\cite{asheim2016vhdl} and is
+shown here with very minor modifications. The network, shown in
+\Cref{fig:someops}, is configured as follows. A generator process continuously
+emits two numbers through a shared bus.  Two processes are connected to the
+reading end of the bus which adds and multiplies the numbers respectively. The
+results of the calculation is then printed by the Printer process.  The PySME
+code of the network is shown in \Cref{fig:someopspy}. The code uses a slightly
+older version of the PySME library than is used elsewhere in this thesis which
+has some minor differences, for example, the {\ttfamily self.tell} function
+which was renamed to {\ttfamily self.add}.  SME processes are declared using a
+class extending one of the classes {\ttfamily External} or {\ttfamily Function}.
+The two classes are semantically identical, but are used to indicate if a
+process is intended purely for simulation or for hardware synthesis,
+respectively.  Thus, {\ttfamily External} processes are expected to utilize code
+constructs not re presentable on hardware.  The translator therefore handled
+them by simply generating empty entity declarations in their place.
 
-The example is a shortened version of an example named AllOps which additionally
-performed division and multiplication.
+The generated SMEIL code is shown in \Cref{fig:someopssme} with a manually added
+{\tt trace} statement to the {\tt Printer} process for printing the calculation
+result. We can see that it is possible to transform the PySME program to SMEIL
+in a straightforward manner. Different from most of the other SMEIL examples
+shown elsewhere, this code utilize a different strategy for creating connections
+between processes where both input and output buses are explicitly passed as
+parameters to the processes. This is the only possible way of connecting
+processes in PySME (as described in \Cref{sec:sme2}). Thus, our idea of
+providing a high-degree of flexibility in how network connections are created
+(discussed in \Cref{sec:instance}) allows this PySME example to be translated
+without any structural transformations.
+
+For this process to be automated all that is needed is
+\begin{itemize}
+  \item Instead of converting {\ttfamily External} processes to empty processes
+    in SMEIL, they should be omitted from the generated code.
+  \item The PySME library should be able to replace buses going between
+    {\ttfamily External} and {\ttfamily Function} processes in the Python
+    program with connections to the {\ttfamily exposed} buses of the generated
+    SMEIL code.
+\end{itemize}
+With these two changes in place, PySME programs will be able to use SMEIL as an
+intermediate target for generating VHDL and to create test-files through the
+co-simulation interface.
+
+% The example is a shortened version of an example named AllOps which additionally
+% performed division and multiplication.
 % Since this code uses a slightly older
 % version of the PySME library, we will briefly describe the differences between
 % the PySME code used in this example and the PySME code appearing elsewhere in
 % the thesis.
-The code uses a slightly older version of the PySME library than is used
-elsewhere in this thesis which has some minor differences, for example, the
-{\ttfamily self.tell} function which was renamed to {\ttfamily self.add}.  SME
-processes are declared using a class extending one of the classes {\ttfamily
-  External} or {\ttfamily Function}. The two classes are semantically identical,
-but are used to indicate if a process is intended purely for simulation or for
-hardware synthesis, respectively. Thus, {\ttfamily External} processes are
-expected to utilize code constructs not re presentable on hardware.  The
-translator therefore handled them by simply generating empty entity declarations
-in their place. This implementation was first presented in~\cite{asheim2016vhdl}
-and is shown here with very minor modifications.
 
 
 \begin{figure}
@@ -274,7 +301,8 @@ network SomeOps ()
   number of hours, minutes and seconds respectively. To better reflect an actual
   hardware implementation, encoder and decoder processes are inserted on the
   wire leading to the digit. They, respectively, encodes to and decodes from the
-  bit-pattern used to light up parts of the 7-segment display.
+  bit-pattern (represented as hexadecimal numbers in the {\tt encode} and {\tt
+    decode} processes) used to light up parts of the 7-segment display.
 
   For representing the current time during simulation, the decoder processes are
   connected to a process which prints the current time in a readable format. The
@@ -367,6 +395,7 @@ network clock() {
   \caption{Code of the 7-segment digital watch network.}
   \label{fig:7segcode}
 \end{widefigure}  
+
 
 \section{ColorBin}
 \label{sec:colorbin}
@@ -593,7 +622,6 @@ sync proc calc (in data, const decay)
     valid: bool;
   };
   var prev: int;
-  const sub: uint = 1;
 
 {
   if (data.valid) {
@@ -676,15 +704,16 @@ network ewma () {
 
 This example is a simplification of a bruteforcer of MD5-hashes developed to
 showcase the performance of FPGAs in comparison with CPUs and GPGPUs for a
-trivially parallelizable problem: Bruteforcing an MD5 hash. The layout of the
-network is shown in \Cref{fig:md5net}. The generator iteratively emits all
-combinations of 8 ASCII printable characters as a string. This string is then
-passed to the hasher, calculating the MD5 sum of the string. In the verifier,
-the calculated hash is compared to a pre-calculated hash of the input string
-that we wish to find. The predictiveness of the input generator means that we
-can ensure that the search terminates quickly by choosing a target string close
-to the starting string. Hence, short runs can be chosen for testing and long
-runs for benchmarking.
+trivially parallelizable problem: Bruteforcing an MD5
+hash~\cite{johnsen2018md5}. The layout of the network is shown in
+\Cref{fig:md5net}. The generator iteratively emits all combinations of 8 ASCII
+printable characters as a string. This string is then passed to the hasher,
+calculating the MD5 sum of the string. In the verifier, the calculated hash is
+compared to a pre-calculated hash of the input string that we wish to find. The
+predictiveness of the input generator means that we can ensure that the search
+terminates quickly by choosing a target string close to the starting
+string. Hence, short runs can be chosen for testing and long runs for
+benchmarking.
 
 A complete implementation of this example exists for several targets: CPUs
 parallelized with OpenMP, OpenCL for GPGPUs, Xilinx HLS and finally C\# SME.
@@ -703,8 +732,10 @@ the correctness of the integer overflow emulation of the \libsme{} simulator in
 order to produce the expected result. The shortened source code of the SMEIL
 process for calculating and MD5 hash is shown in \Cref{fig:smeilhash}. The
 process receives the string that should be hashed through the bus passed as its
-{\ttfamily input} parameter. The calculated hash is then sent on the {\ttfamily hashes} bus
-which is read by the verification process.
+{\ttfamily input} parameter. The calculated hash is then sent on the {\ttfamily
+  hashes} bus which is read by the verification process.
+% Also note the close
+% resemblance of the SMEIL implementation of the algorithm to an eq
 
 \begin{widefigure}
 

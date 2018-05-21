@@ -4,7 +4,7 @@ In the previous chapters, we have described a new language for representing SME
 networks, SMEIL and how its implementation fits into the greater whole
 \todo{rewrite}. The questions that are left to answer now are, what have we
 achieved by doing so? Is SMEIL suitable for the current SME ecosystem, and
-finally, 
+finally,
 
 \section{Completeness of SMEIL in relation to SME}
 In this section, we try to provide some insight into whether the SMEIL provides
@@ -12,20 +12,59 @@ a {\itshape complete} representation of the SME model. Thus, a complete SME
 implementation is \begin{inparaenum}]a)] \item able to construct networks from 
 \end{inparaenum}
 
-\section{Generality of SMEIL in relation to SME}
-Did we reach our goal of
+A complete SME implementation implements all the key elements of the SME model
+including
+\begin{itemize}
+\item Independent processes
+\item Buses
+\item Synchronous communications
+\item Ability to create compositions of networks.
+\end{itemize}
+as
 
+As we have shown in several examples. 
 
-\section{Relation with other HDLs}
-Discuss how SME and specifically SMEIL relates to other similar ``simple''
-hardware description languages. \todo{Should this be here?}
+\section{Usability of SMEIL}
+As a language for implementing simple SME networks, SMEIL is already functional
+and usable. We have seen this ... . An issue which we have not discussed is how
+well SMEIL scales for larger networks since we have only looked at small
+examples. For this, we argue that the scalability of SMEIL is similar to that of
+C\# SME which has previously been used to create large-scale SME
+implementations. This is because the primary structural components of the C\#
+SME implementations maps to SMEIL in a straight-forward manner.
 
-\section{Related co-simulation approaches}
-\todo{Should this be here}
+A shortcoming of SMEIL in its current state is that we do not yet support all of
+the features of the C\# SME implementation, however, doing so was not within the
+scope of the thesis in the first place.
+
+We believe that
+
+Co-simulation is a frequently used technique for verifying hardware designs,
+however, 
+
+Our approach for determining types based on observed input is, to the best of
+our knowledge, unique within the landscape of Hardware Description
+Languages. Several 
+
+Several other approaches
+
+Another aspect which is outside the scope of the thesis is actually implementing
+the generated VHDL code on hardware. However, it is still an important aspect to
+discuss since the primary purpose of writing SME models is to, as previously
+mentioned, eventually create a hardware description. 
+
+% \section{Relation with other HDLs}
+% Discuss how SME and specifically SMEIL relates to other similar ``simple''
+% hardware description languages. \todo{Should this be here?}
+
+% \section{Related co-simulation approaches}
+% \todo{Should this be here}
 
 \section{Comparison with ``state-of-the-art'' SME}
 Write about: Internal buses: We have language support based on inference from
 usage, but not implemented. Arrays as busses
+
+
 
 \section{Target Language Support}
 We have currently only implemented a single language backend for SMEIL:

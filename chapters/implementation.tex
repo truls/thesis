@@ -203,14 +203,51 @@ are shown to the user using nicely formatted concrete SMEIL syntax.
 \section{Runtime Representation of SMEIL}
 Since entities in SMEIL can be instantiated, there is not a one-to-one
 correspondence between the number of entity and bus declarations and the number
-of objects in the runtime representation. Here, we describe the algorithm used
+of objects in the runtime representation.
+
+Here, we describe the algorithm used
 to go from program declaration to runtime objects. \todo{finish}
 
+Like the handling of import statements, the algorithm for establishing a runtime
+representation of SMEIL 
+
 \todo{Describe the recursive algorithm used for creating a runtime
-representation of an SMEIL program.}
+  representation of an SMEIL}
 
+The input to the process is an SMEIL program and the result is a graph
+containing process instances with links to the buses that connects
+them.
+The key insight of this algorithm is that a network, connecting two processes,
+for example
+\begin{smeilcode}
+  network n() {
+    instance i1 of p1(p2.b);
+    instance i2 of p2(p1.b);
+  }
+\end{smeilcode}
+instantiates two processes i1 and i2 and creates a connection between them. What
+makes this hard, is that even though the connection between the two processes is
+established in the network {\tt n}, we need to examine the declarational parts
+of the processes {\tt i1} and {\tt i2} in order to know which buses to
+connect. Another thing to note is that networks have no effect on the runtime
+representation of an SMEIL program.
 
-\section{Design philosophy}
+This runtime representation is established through the following
+algorithm:
+\begin{enumerate}
+  \item For every {\tt instance} instance declaration encountered referencing a
+    process we create a process representation containing a symbol table. We
+    fill this symbol table with all declarations {\itshape except} instance
+    found in the declarational part of the process.
+    
+  \item For every such newly created tree node we create a bus instance for
+    every bus declaration in the entity.
+  \item Then, every instance 
+\end{enumerate}
+
+\section{Design challenges}
+The key challenge faced in the design of libsme was that, at any stage in the
+compiler, we had to be able to return to the original representation.
 TODO: Discuss issues related to maintaining a single internal representation
 throughout the compiler which is reconstructable to the original concrete
 syntax.
@@ -240,11 +277,33 @@ syntax.
 % pleasant. By using Haskell, we have traded a slightly slower development pace,
 % for significantly less time spent debugging.
 
-The library itself comprises just short of 6000 SLOC of Haskell. Additionally,
-the wrapper module for holding the co-simulation state and neatly exposing the
+\todo{section}
+The language chosen for implementation of SMEIL is Haskell. It would have been
+possible to carry out the implementation in any high-level language, but Haskell
+was chosen in particular because:
+\begin{itemize}
+\item Functional programming languages are well suited for writing
+  compiler-related software, due to their support for Algebraic Data Types
+  (ADTs) and pattern-matching. Also, a wide range of libraries exists for
+  supporting the implementation of for example parsers and pretty-printers.
+\item The type-safety of Haskell trades slightly slower development pace for a
+  significant reduction of time spent debugging.
+\item The type system also significantly aids refactoring, something which
+  proved useful several times while developing this project. For
+  example, changing a fundamental data structure in Python can be a daunting
+  task since 
+\end{itemize}
+
+
+\libsme{} comprises just short of 6000 SLOC of Haskell. Additionally, the
+wrapper module for holding the co-simulation state and neatly exposing the
 functions of the C-API is implemented in a module is $\sim 500$ SLOC of C. The
 VHDL parsing and quasiquotation library developed for use with this project
 consists of approximately 5500 SLOC of Haskell.
+
+The implementation has several rough areas, but has been written with future
+extensions in mind. It also pays particular attention to usability-related
+features such as providing understandable error messages.
 
 %%% Local Variables:
 %%% mode: latex

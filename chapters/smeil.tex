@@ -217,7 +217,8 @@ considerations.
 
 As can be seen from the grammar, networks may only contain static
 declarations. The reason for this is that the structure of an SME network must
-be static at compile time. \todo{Why is this?}
+be static at compile time. Due to the static target of SMEIL, it is impossible
+to, for example, instantiate new processes at runtime.
 
 A related question to ask is, why make the distinction between networks and
 processes in the first place? After all, all declarations which are allowed in
@@ -237,7 +238,7 @@ that instantiate each other. The nodes of the graph are then topologically
 sorted and the head of the sorted list is the top-level entity of the
 network. We also ensure that the graph is acyclic as process instantiation
 cycles would expand indefinitely. Note that even though the connections of a
-network such as {\sc addone} \todo{Reference to example} is cyclic, its
+network such as AddOne (Seen in \Cref{sec:smeilex}) is cyclic, its
 instantiation graph is not since a single network instantiates the two
 processes.
 
@@ -1136,6 +1137,7 @@ inner scope shadow declarations made in outer scopes. For example, \todo{finish
   or remove}
 
 \section{A Small Example}
+\label{sec:smeilex}
 \begin{figure}
   \centering
   \resizebox{.7\linewidth}{!}{

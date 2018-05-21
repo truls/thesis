@@ -82,11 +82,12 @@ have code-generation backends targeting VHDL. In practice, it has proven
 impossible to maintain feature parity between these independent implementations
 due to the code-duplication involved. This created a demand to unify the common
 backend components of these divergent code bases. To achieve this, a common
-intermediate language for SME networks was needed. Combining SME networks
-written in different source languages was also a desired feature. While we could
-feasibly introduce an interface allowing this between Python and C\#, the number
-of required interfaces increase exponentially for every language added. Having a
-common intermediate language would make this integration simple.
+intermediate language for SME networks was needed. While we could feasibly
+introduce an interface allowing this between Python and C\#, the number of
+required interfaces increase exponentially for every language added. Having a
+common intermediate language would make this integration simple. Furthermore,
+combining SME networks written in different source languages was also a desired
+feature.
 
 This thesis introduces the SME Implementation Language (SMEIL, pron. ``smile'')
 and its accompanying implementation, \libsme{}~\cite{libsme}.

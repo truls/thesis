@@ -26,7 +26,9 @@ generation.
 
 A noticeable feature of the API is its support for arbitrary-length
 integers. This means that the bit-width of buses used in simulated designs are
-not restricted by the register-width of the underlying CPU
+not restricted by the register-width of the underlying CPU. Support for
+simulating designs using integers larger than the register-width of the host CPU
+is desired since these may occasionally be used in a hardware design.
 
 
 When this API is used \libsme{} operates as a ``puppet'', being controlled by
@@ -181,6 +183,8 @@ typedef struct BusMap {
 } BusMap;
 \end{lstlisting}
 
+The data structures made available through the 
+
 \subsection{Public API}
 \begin{description}
 \item[\texttt{SmeCtx* sme\_init()}]\hfill\\
@@ -242,19 +246,20 @@ day of implementation work by a person with expert knowledge of both
 code-bases. We expect that a similar effort is required to extend other SME
 implementations (such as C\# SME and C++ SME).
 
-As an example, we revisit our trivial \textsc{plusone} network from before, this
-time implementing one half of it in Python seen in \Cref{fig:smeilpy}. The
-\texttt{@extends} decorator is all that is needed to make the buses exposed from
-the SMEIL network available for the Python program. Behind the scenes, \libsme{}
-is loaded and the \texttt{addone.sme} file is parsed, typechecked and the
-\libsme{} SMEIL simulator is initialized. A SMEIL-defined bus is referenced from
-PySME by creating an \texttt{ExternalBus}, providing the name of a bus as its
-parameter. The semantics of an {\ttfamily ExternalBus} is identical to those of
-a bus defined within Python. Any SMEIL type except strings and arrays may be
-passed along a bus. Strings play a very limited role in SMEIL and are therefore
-unlikely to be supported. Arrays, on the other hand, are desirable to include in
-future extensions. Integers are encoded in base-256 as a sequence of bytes,
-allowing arbitrarily-sized integers to be used between co-simulated entities.
+As an example, we revisit our trivial PlusOne example introduced in
+\Cref{sec:smeilex}, this time implementing one half of it in Python seen in
+\Cref{fig:smeilpy}. The \texttt{@extends} decorator is all that is needed to
+make the buses exposed from the SMEIL network available for the Python
+program. Behind the scenes, \libsme{} is loaded and the \texttt{addone.sme} file
+is parsed, typechecked and the \libsme{} SMEIL simulator is initialized. A
+SMEIL-defined bus is referenced from PySME by creating an \texttt{ExternalBus},
+providing the name of a bus as its parameter. The semantics of an {\ttfamily
+  ExternalBus} is identical to those of a bus defined within Python. Any SMEIL
+type except strings and arrays may be passed along a bus. Strings play a very
+limited role in SMEIL and are therefore unlikely to be supported. Arrays, on the
+other hand, are desirable to include in future extensions. Integers are encoded
+in base-256 as a sequence of bytes, allowing arbitrarily-sized integers to be
+used between co-simulated entities.
 
 When this program is run, the PySME library calls the \libsme{} library for
 every cycle to stepwise progress the simulation. During the simulation \libsme{}
@@ -280,19 +285,26 @@ We show more examples of using co-simulation to test SMEIL networks in
 
 \section{Typing Networks Through Simulation}
 \label{sec:typing}
-\todo{Why do we only have this restricted notion of dynamic typing. Why no
-  completely variable types?}  In order to translate SMEIL to a hardware
+% \todo{Why do we only have this restricted notion of dynamic typing. Why no
+%   completely variable types?}
+In order to translate SMEIL to a hardware
 description, we require that all types in the program are constrained to a
 specific bit-width. However, it is often hard to know the optimal bit-width of a
 value in advance. In particular, this applies to internal variables whose values
 are derived from external inputs. To address this, \libsme{} provides a method
 for re-typing a SMEIL program based on values observed during simulation.
 
+When this feature is enabled, the maximum absolute value assigned to a variable
+is stored alongside its current value. Whenever the value is assigned, the new
+value is compared against the current maximum which is updated if the new value
+is larger.
+
 % As described in \Cref{sec:typesys}, the only unsized types which exists in SMEIL
 % are signed and unsigned integers. This raise the question: Why not have an
 % {\ttfamily any}-type which could unify with any other type? A related form of
 % the question is: Why distinguish between signed and unsigned unsized integer
-% when the signed type is the superset of the two 
+% when the signed type is the superset of the two
+
 \todo{Describe implementation details}
 \todo{We promise to mention ranges earlier}
 When the simulation is concluded, the observed value ranges are converted to
@@ -324,6 +336,7 @@ proc A ()
 }
 \end{lstlisting}
     \caption{Unconstrained types.}
+    \label{fig:oktype}
   \end{subfigure}
   \begin{subfigure}[t]{0.30\linewidth}
     %\centering
@@ -338,6 +351,7 @@ proc A ()
 }
     \end{lstlisting}
     \caption{Valid.}
+    \label{fig:non-violated}
   \end{subfigure}
   \begin{subfigure}[t]{0.30\linewidth}
     %\centering
@@ -380,7 +394,10 @@ apply: \begin{inparaenum}[1)] \item All values deriving from input stimuli must
 
 To allow easy visualization of the types derived from value observations without
 having to examine the generated source code, \libsme{} is able to display the
-SMEIL program with the modified types in place.
+SMEIL program with the modified types in place. That is, if the program shown in
+\Cref{fig:oktype} was actually simulated, the resulting code shown in
+\Cref{fig:non-violated} or \Cref{fig:violated} would be what is actually shown
+to the user.
 
 A limitation of the current implementation is that SMEIL buses are referenced by
 their bare name, rather than in relation to their position in the instance
@@ -406,18 +423,18 @@ sent over buses would be generated. Then, the hardware-targeted processes of the
 PySME model would be translated to SMEIL and the recorded tracefile could be
 used for providing input to the SMIEL model.
 
-\todo{Why would this be a problem?}. Implementing this model would require less
-work, but it would only support the usage of SMEIL as an intermediate language
-and not as a primary implementation language: in order to generate the required
-trace file, a complete implementation of the network in a single language is
-required. Furthermore. the co-simulation model delegates the responsibility of
-generating the trace-file to \libsme{}. Since \libsme{} is also responsible for
-generating the final VHDL code, this makes it simpler to ensure that names and
-ordering of fields in the CSV file matches those expected by the generated VHDL
-test bench. If the trace file was generated externally, it would also prevent
-changing the \libsme{} implementation in a way which altered the naming and/or
-ordering in the CSV files. Thus, tje co-simulation model is advantageous even
-when SMEIL is used as an \gls{il}.
+\todo{Why would this be a problem?}Implementing this model would require less
+work, but it would only support using SMEIL as an intermediate language and not
+as a primary implementation language for the following reason: in order to
+generate the required trace file, a complete implementation of the network in a
+single language is required. Furthermore. the co-simulation model delegates the
+responsibility of generating the trace-file to \libsme{}. Since \libsme{} is
+also responsible for generating the final VHDL code, this makes it simpler to
+ensure that names and ordering of fields in the CSV file matches those expected
+by the generated VHDL test bench. If the trace file was generated externally, it
+would also prevent changing the \libsme{} implementation in a way which altered
+the naming and/or ordering in the CSV files. Thus, the co-simulation model is
+advantageous even when SMEIL is used as an \gls{il}.
 
 \paragraph{External library generation}
 As an alternative to implementing an interface to the simulator within

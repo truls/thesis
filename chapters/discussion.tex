@@ -1,57 +1,95 @@
 \chapter{Discussion}
 
-In the previous chapters, we have described a new language for representing SME
-networks, SMEIL and how its implementation fits into the greater whole
-\todo{rewrite}. The questions that are left to answer now are, what have we
-achieved by doing so? Is SMEIL suitable for the current SME ecosystem, and
-finally,
+% In the previous chapters, we have described a new language for representing SME
+% networks, SMEIL and how its implementation fits into the greater whole
+% \todo{rewrite}. The questions that are left to answer now are, what have we
+% achieved by doing so? Is SMEIL suitable for the current SME ecosystem, and
+% finally,
 
-\section{Completeness of SMEIL in relation to SME}
-In this section, we try to provide some insight into whether the SMEIL provides
-a {\itshape complete} representation of the SME model. Thus, a complete SME
-implementation is \begin{inparaenum}]a)] \item able to construct networks from 
-\end{inparaenum}
+We started working on SMEIL with the intention of creating a language for use as
+an intermediate language for existing SME implementations. The resulting
+language covers a wider scope and a larger number of use-cases than was
+originally intended. In this chapter, we discuss uses for SMEIL and how it
+relates to current SME implementations.
 
-A complete SME implementation implements all the key elements of the SME model
-including
-\begin{itemize}
-\item Independent processes
-\item Buses
-\item Synchronous communications
-\item Ability to create compositions of networks.
-\end{itemize}
-as
+% \section{Completeness of SMEIL in relation to SME}
+% In this section, we try to provide some insight into whether the SMEIL provides
+% a {\itshape complete} representation of the SME model. Thus, a complete SME
+% implementation is \begin{inparaenum}]a)] \item able to construct networks from 
+% \end{inparaenum}
 
-As we have shown in several examples. 
+% A complete SME implementation implements all the key elements of the SME model
+% including
+% \begin{itemize}
+% \item Independent processes
+% \item Buses
+% \item Synchronous communications
+% \item Ability to create compositions of networks.
+% \end{itemize}
+% as SMEIL features all of these, we believe it to be able to provide 
+
+% As we have shown in several examples. 
+
+% Before SMEIL is able to be used 
+% A shortcoming of SMEIL in its current state is that we do not yet support all of
+% the features of the C\# SME implementation, however, doing so was not within the
+% scope of the thesis in the first place.
+
 
 \section{Usability of SMEIL}
-As a language for implementing simple SME networks, SMEIL is already functional
-and usable. We have seen this ... . An issue which we have not discussed is how
-well SMEIL scales for larger networks since we have only looked at small
-examples. For this, we argue that the scalability of SMEIL is similar to that of
-C\# SME which has previously been used to create large-scale SME
-implementations. This is because the primary structural components of the C\#
-SME implementations maps to SMEIL in a straight-forward manner.
+As a language for representing SME networks SMEIL is complete in the sense that
+it implements the elements and semantics required by the SME model. We have also
+shown a number of actual implementations of SME networks showing the practical
+use of SMEIL.
 
-A shortcoming of SMEIL in its current state is that we do not yet support all of
-the features of the C\# SME implementation, however, doing so was not within the
-scope of the thesis in the first place.
+% This is shown here through the numerous examples that we have been able to
+% implement.
+% An issue which we have not discussed is how well SMEIL scales for
+% larger networks since we have only looked at small examples. For this, we argue
+% that the scalability of SMEIL is similar to that of C\# SME which has previously
+% been used to create large-scale SME implementations. This is because the primary
+% structural components of the C\# SME implementations maps to SMEIL in a
+% straight-forward manner.
 
-We believe that
 
-Co-simulation is a frequently used technique for verifying hardware designs,
-however, 
+We have previously argued for the potential benefits of using SMEIL in favor of
+general-purpose for writing hardware-targeted SME networks. However, there are
+also several disadvantages related to implementing a new and distinct
+language. One particular disadvantage is the abandonment of development
+environments, debuggers and other tooling that comes with an established
+general-purpose language. For SMEIL to offset these disadvantages, an additional
+development effort is required to replace this lost tooling. On the other hand,
+in relation to debuggers it could be argued that languages for constructing
+concurrent models, such as SMEIL, require a different kind of debuggers than
+traditional sequential languages.
 
-Our approach for determining types based on observed input is, to the best of
-our knowledge, unique within the landscape of Hardware Description
-Languages. Several 
-
-Several other approaches
 
 Another aspect which is outside the scope of the thesis is actually implementing
 the generated VHDL code on hardware. However, it is still an important aspect to
 discuss since the primary purpose of writing SME models is to, as previously
-mentioned, eventually create a hardware description. 
+mentioned, eventually create a hardware description....
+
+
+\subsection{Using SMEIL as an IL}
+SMEIL is usable as an intermediate language for SME models written in a wide
+range of different general-purpose languages. We base this on the very strict
+definition of SMEIL which forces a ``normalized'' representation of SME networks
+regardless of how the code was generated. Thus, if generating SMEIL from a
+dynamically typed source, it is the responsibility of the generator to ensure
+that the appropriate types are assigned. This means that an SMEIL program should
+not carry any particular traits depending on which source languages it was
+generated from.
+
+We have already shown an example of how SMEIL can function as an intermediate
+language for the PySME SME implementation. However, the PySME library is
+restricted in terms of functionality compared to the C\# SME library which has
+been used as the base for all of the previously referenced SME models
+implemented on hardware. Compared to C\# SME, SMEIL and \libsme{} still lacks a
+number of essential features. Achieving feature-parity with ``state-of-the-art''
+SME libraries was considered outside the scope of this thesis due to the longer
+period of time that these libraries has been under development. However, it
+means that more work is required in order to make SMEIL usable as an IL for C\#
+SME.
 
 % \section{Relation with other HDLs}
 % Discuss how SME and specifically SMEIL relates to other similar ``simple''
@@ -60,28 +98,78 @@ mentioned, eventually create a hardware description.
 % \section{Related co-simulation approaches}
 % \todo{Should this be here}
 
-\section{Comparison with ``state-of-the-art'' SME}
-Write about: Internal buses: We have language support based on inference from
-usage, but not implemented. Arrays as busses
+% \section{Comparison with ``state-of-the-art'' SME}
+% Write about: Internal buses: We have language support based on inference from
+% usage, but not implemented. Arrays as buses
 
+\section{Co-Simulation and observation based typing}
+One of the strongest features of SMEIL is the co-Simulation interface which
+allows it to seamlessly interact with SME networks written in other
+languages. It is the cornerstone of enabling SMEIL to be used both as an
+intermediate language and as a primary implementation language for hardware
+designs. For the intermediate-language use-case it allows ... For use as a
+primary implementation language, it allows direct testing of designs without
+having to execute generated code.
 
+Co-simulation is a frequently used technique for verifying hardware designs (for
+example CoCoTB referenced in \Cref{sec:retwork}), however, the presented
+SME-based model is unique in that the same model is used on both sides of the
+simulation. We have only shown an implementation of the API for Python here and
+claim that it will be easy to integrate with other SME implementations as
+well....
+% Due to the dynamic nature of Python it lends itself well for performing
+% such...
+
+Our approach for determining types based on observed input is, to the best of
+our knowledge, also not implemented in any existing HDLs. We are aware that
+there may be good reasons for this, since we, as previously stated, realize the
+inadequate safety provided by this approach. However, based on our limited
+testing, the productivity advantage of not having to place precise type bounds
+on all internal variables does seem to be real. Furthermore, in some cases, such
+as quickly prototyping a design on a FPGA, safety may not be the primary desired
+features. Thus, if combined with static analysis to prove that the
+observationally derived type bounds really are safe, it may turn out to be a
+powerful approach.
 
 \section{Target Language Support}
-We have currently only implemented a single language backend for SMEIL:
-VHDL. However, compiling SMEIL to other languages, such as C++ (see
-\cite{skovhede2017c++}) is also desirable. Furthermore, \libsme is written with
-support for multiple target languages in mind, and the infrastructure to add
-another target language is in place, but unfortunately time constraints did not
-allow us to do it. Specifically in relation to other HDLs such as Verilog. Most
-new high-level HDLs is able to generate at lest VHDL and Verilog. SME is
-currently only translatable to VHDL, however, adding support for Verilog is
-entirely possible. To support this claim, we point
-to \begin{inparaenum}[a)]\item The large number of tools (e.g. \todo{cite})
-  )already supporting both languages and \item numerous \end{inparaenum} \todo{cite} \todo{Why do
-    we think its simple to add another language?} We have not assessed the
-  practicality of transforming SMEIL to languages following other paradigms,
-  such as functional languages or alternative hardware description
-  languages. However, such languages is outside the scope of the thesis.
+We have currently only implemented a code generation backend for VHDL. This
+language was chosen because it, as previously mentioned, is a hardware
+description language and is thus the primary desired target for SME models. For
+this thesis, we chose not to implement support for additional code generation
+backends and instead making the core infrastructure related to SMEIL as complete
+as possible. However, having support for generating additional languages is
+desirable in several circumstances. Having, for example, C++ support can (as
+shown in \cite{skovhede2017c++}) allow for faster simulation of SME networks and
+allow SME networks to be used as independent libraries with other languages.
+
+Supporting other HDLs, such as Verilog, is also desirable since it would allow
+SME models to interface with hardware designs implemented in HDLs other than
+VHDL. Adding such support to SMEIL is quite feasible since most other ``new''
+HDLs (we do a small survey in \Cref{sec:retwork}) support code generation for at
+least VHDL and Verilog. This shows that hardware designs which are implemented
+in VHDL can also be represented using Verilog.
+
+The current \libsme{} implementation is written with support for multiple target
+languages in mind. This is done, by confining all VHDL-related details to the
+VHDL code generation backend. All other phases of the compiler are kept as
+general as possible. Thus, 
+
+We have not assessed the practicality of transforming SMEIL to languages
+following other paradigms, such as functional languages or alternative hardware
+description languages. However, so far, targeting such languages as been out of
+scope for SME..
+
+
+% However, compiling SMEIL to other languages, such as C++ ) is also desirable. Furthermore, \libsme is written with
+% support for multiple target languages in mind, and the infrastructure to add
+% another target language is in place, but unfortunately time constraints did not
+% allow us to do it. Specifically in relation to other HDLs such as Verilog. Most
+% new high-level HDLs is able to generate at lest VHDL and Verilog. SME is
+% currently only translatable to VHDL, however, adding support for Verilog is
+% entirely possible. To support this claim, we point
+% to \begin{inparaenum}[a)]\item The large number of tools (e.g. \todo{cite})
+%   )already supporting both languages and \item numerous \end{inparaenum}
+% \todo{cite} \todo{Why do we think its simple to add another language?}
 
 %%% Local Variables:
 %%% mode: latex

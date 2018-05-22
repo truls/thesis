@@ -4,7 +4,7 @@
 In this chapter, we first present an example of SMEIL used as an \gls{il}
 followed by four small examples implemented in SMEIL: A model watch using a
 7-segment display, the core of a trading chip, a process for binning colors
-based on intensity and finally an MD5 hash bruteforcer.  \todo{Motivate why
+based on intensity and finally a MD5 hash bruteforcer.  \todo{Motivate why
   these examples were picked in particular}
 
 Information on how to reproduce the runs shown below is given in \Cref{app:inst}.
@@ -13,15 +13,16 @@ Information on how to reproduce the runs shown below is given in \Cref{app:inst}
 \section{SMEIL as an intermediate language}
 \label{sec:smeilil}
 We have made repeated references to the origins of SMEIL as a pure \gls{il} and
-described how and why the scope of the language was widened to also include use
-as an independent implementation language. Despite this, SMEIL is still very
+described how and why the scope of the language was expanded to also include the
+use as an independent implementation language. Despite this, SMEIL is still very
 much intended to be also usable as an \gls{il}. As it may be obvious at this
 point, the design, implementation and testing have mostly focused on its use as
 a primary implementation language, with the \gls{il} angle remaining in the
-background. Ideally, we would have a code generation backend for C\# at this
-point, targeting SMEIL, since that is the most complete SME
-implementation. However, this was not possible within the available time-frame
-and in any case the implementation would need to be carried out by a third
+background. Ideally, we would have developed a code generation backend for C\#
+at this point, targeting SMEIL, since that is the most complete SME
+implementation. %Unfortunately?
+However, this was not possible within the available time-frame
+and in any case, the implementation would need to be carried out by a third
 party, and this was outside the scope of the thesis.
 % --- your present writer is not sufficiently familiar with the C\# SME framework
 % to carry out the work himself within a reasonable time frame. In the end, time
@@ -30,33 +31,32 @@ party, and this was outside the scope of the thesis.
 % significant parts of the co-simulation interface.
 
 %It is never ideal to leave loose ends, so
-To show that using SMEIL as an \gls{il} {\itshape can} be done we have adapted
+To show that using SMEIL as an \gls{il} {\itshape can} be done, we have adapted
 our previously implemented Python to \gls{vhdl} compiler to generate SMEIL
 instead of generating VHDL directly. This translation is not yet fully
-automated, but we explain how it could be done here, and that doing it is
-feasible.
+automated, but we explain how that could be done feasibly.
 
 As an example, we will show how the SomeOps network is translated from PySME to
 SMEIL.  This implementation was first presented in~\cite{asheim2016vhdl} and is
 shown here with very minor modifications. The network, shown in
-\Cref{fig:someops}, is configured as follows. A generator process continuously
+\Cref{fig:someops}, is configured as follows: A generator process continuously
 emits two numbers through a shared bus.  Two processes are connected to the
-reading end of the bus which adds and multiplies the numbers respectively. The
-results of the calculation is then printed by the Printer process.  The PySME
-code of the network is shown in \Cref{fig:someopspy}. The code uses a slightly
-older version of the PySME library than is used elsewhere in this thesis which
-has some minor differences, for example, the {\ttfamily self.tell} function
-which was renamed to {\ttfamily self.add}.  SME processes are declared using a
-class extending one of the classes {\ttfamily External} or {\ttfamily Function}.
-The two classes are semantically identical, but are used to indicate if a
-process is intended purely for simulation or for hardware synthesis,
-respectively.  Thus, {\ttfamily External} processes are expected to utilize code
-constructs not re presentable on hardware.  The translator therefore handled
-them by simply generating empty entity declarations in their place.
+reading end of the bus which will add and multiply the numbers,
+respectively. The results of the calculation is then printed by the Printer
+process.  The PySME code of the network is shown in \Cref{fig:someopspy}. The
+code uses a slightly older version of the PySME library than used elsewhere in
+this thesis which has some minor differences, for example, the {\ttfamily
+  self.tell} function which was renamed to {\ttfamily self.add}.  SME processes
+are declared using a class extending one of the classes {\ttfamily External} or
+{\ttfamily Function}.  The two classes are semantically identical, but are used
+to indicate if a process is intended purely for simulation or for hardware
+synthesis, respectively.  Thus, {\ttfamily External} processes are expected to
+utilize code constructs not representable on hardware.  The translator handled
+these constructs by simply generating empty entity declarations in their place.
 
 The generated SMEIL code is shown in \Cref{fig:someopssme} with a manually added
 {\tt trace} statement to the {\tt Printer} process for printing the calculation
-result. We can see that it is possible to transform the PySME program to SMEIL
+result. We can observe that it is possible to transform the PySME program to SMEIL
 in a straightforward manner. Different from most of the other SMEIL examples
 shown elsewhere, this code utilize a different strategy for creating connections
 between processes where both input and output buses are explicitly passed as
@@ -291,9 +291,9 @@ network SomeOps ()
     % (\url{https://commons.wikimedia.org/wiki/File:7_segment_display_labeled.svg})
     % by h2g2bob. CC BY-SA-3.0.}
 
-  The first example, implements a model of an old-fashioned digital watch
-  displaying the current time using 6 7-segment digits. The layout is depicted
-  in \Cref{fig:7seg}. The timer process continuously increments a number,
+  The example implements a model of an old-fashioned digital watch displaying
+  the current time using 6 7-segment digits. The layout is depicted in
+  \Cref{fig:7seg}. The timer process continuously increments a numeric value,
   representing the number of seconds passed since turn-of-day, which is stored
   in the state of the process. For every cycle, the current number of seconds is
   emitted. This number is then broadcasted through a shared bus to a number of
@@ -445,12 +445,12 @@ stores the pixel intensity counts for each image. The source code for the
 collector process is shown. The SMEIL source code is shown in
 \Cref{fig:collector}. The VHDL code generated for the process is shown in
 \Cref{fig:vhdlc}. The mapping of names and structure from SMEIL to VHDL is
-clearly seen. As is the immense verbosity of VHDL. When we generate expressions,
+clearly seen, as is the immense verbosity of VHDL. When we generate expressions,
 we set parentheses in a very pessimistic manner. To ensure that the precedence
 of operators in SMEIL is preserved in VHDL, we set parentheses around every
 binary operation. Unfortunately, this adds some clutter to the generated code in
 the form of unnecessary parentheses. This matter is subject to future
-improvements. For example by implementing the ``unparsing'' method described in
+improvements. For example, by implementing the ``unparsing'' method described in
 \cite{ramsey1998unparsing} which, based on knowledge about operator precedence
 in the target language, reverse-transforms an AST using as few parentheses as
 possible.
@@ -602,7 +602,7 @@ The network is shown in \Cref{fig:simpletrade} and the SMEIL source in
 is passed through the merge process which combines the long and short averages
 into a single bus. The core of the trader is written in SMEIL, while the
 processes providing input stimuli and data collections is written in Python as a
-PySME model. The input data is generated using a brownian
+PySME model. The input data is generated using a Brownian
 bridge~\cite{glasserman2003monte} which is a stochastic process commonly used as
 a realistic model for simulating stock price developments. The results are
 collected and visualized in a graph for easy verification.
@@ -610,9 +610,9 @@ collected and visualized in a graph for easy verification.
 In an actual trading chip, the data generator is replaced with actual stock
 prices arriving through a network interface and the plot is replaced by market
 transactions. Both the testing and verification processes leverage existing
-Python libraries. The brownian bridge generator is implemented using NumPy while
+Python libraries. The Brownian bridge generator is implemented using NumPy while
 the plot is made using matplotlib. Implementing these test processes in VHDL
-would be a massive undertaking, With Python, it is quite simple.
+would be a massive undertaking, with Python, it is quite simple.
 
 \begin{widefigure}
   \begin{smeilcode2}
@@ -719,13 +719,13 @@ A complete implementation of this example exists for several targets: CPUs
 parallelized with OpenMP, OpenCL for GPGPUs, Xilinx HLS and finally C\# SME.
 Both the two latter implementations synthesizes and runs on FPGAs. A comparison
 of these implementations showed that while GPUs were superior in raw
-performance, the performance-per-watt ratio favored the FPGA significantly by
-more than an order of magnitude. Furthermore, the SME version is significantly
-more efficient than the Vivado HLS implementation, which relies on the
-concurrency inference discussed in the introduction.
+performance, the performance-per-watt ratio favored FPGAs by more than an order
+of magnitude. Furthermore, the SME version is significantly more efficient than
+the Vivado HLS implementation, which relies on the concurrency inference
+discussed in the introduction.
 
 This example mainly serves to show an SMEIL implementation of an SME model which
-has been synthesized to an FPGA. It also showcases an implementation a
+has been synthesized to an FPGA. It also showcases an implementation of a
 non-trivial algorithm (MD5) in SMEIL. In particular, the MD5 algorithm relies
 heavily on bit-shifting of 32-bit unsigned integers. Therefore, it depends on
 the correctness of the integer overflow emulation of the \libsme{} simulator in
@@ -825,15 +825,21 @@ The current implementation of SMEIL is not written with performance in mind and
 leaves a lot of performance-related low-hanging fruits unpicked. Indeed, its
 naïve interpreter makes repeated traversals of the SMEIL AST and the interface
 between PySME and \libsme{} relies on the very general and inefficient
-\textsc{libffi} library. Lastly, Python itself is not cherished for its
-performance. It is therefore noteworthy that it still exceeds the performance of
-the VHDL simulator GHDL, which generates native code before simulating. The VHDL
+\textsc{libffi} library.
+% Lastly, Python itself is not cherished for its
+% performance. It is therefore noteworthy that it still exceeds the performance of
+% the VHDL simulator GHDL,
+Lastly, while Python itself is not cherished for its performance, it should be
+noted that \libsme{} still exceeds the performance of the VHDL simulator, GHDL, 
+which generates native code before simulating. The VHDL
 simulator of Xilinx Vivado, fails to complete the simulation due to memory
 exhaustion.
 
 Simulating 352,686 cycles of the ColorBin (\Cref{sec:colorbin}) network on an
 Intel Core i7 6700HQ CPU at 2.60GHz, requires 47 seconds using GHDL but only 30
-seconds using \libsme.
+seconds using \libsme. Based on the benchmarks shown in \cite{skovhede2017c++},
+\libsme{} achieves only slightly lower performance than C\# SME in this
+particular test.
 
 
 %%% Local Variables:

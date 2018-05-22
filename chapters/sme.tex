@@ -1,9 +1,9 @@
 \chapter{Background}
 In this chapter, we introduce the Synchronous Message Exchange (SME) model and
 briefly describe its origins, evolution, semantics and implementations. The
-design of SMEIL draws from the lessons learned throughout the, rather brief,
-time period in which SME has existed. Here, we try to convey these insights to
-the reader. Additionally, we further motivate the need for custom hardware.
+design of SMEIL draws from the lessons learned throughout the brief time period
+in which SME has existed. Here, we convey these insights to the
+reader. Additionally, we motivate the need for custom hardware.
 
 \section{Synchronous Message Exchange}
 \label{sec:sme}
@@ -111,7 +111,7 @@ current cycle are positioned to be read by processes in the following cycle.
 
 Each channel in a bus has separate reading- and writing-ends. During the compute
 phase of a cycle, the reading-ends of channels are kept constant. The writing
-end of a channel has a single-element overwrite buffer. Therefore, when a
+end of a channel has a single-element overwriting buffer. Therefore, when a
 process writes to a channel, the result is not immediately visible on the
 reading end. The bus propagation phase copies all values from the reading-end to
 the writing end. Thus, values written in cycle $c$, will be read in cycle

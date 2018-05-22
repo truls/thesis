@@ -1,8 +1,8 @@
 \chapter{The SME Implementation Language}
 
-The language introduced in this thesis, the \gls{smeil}, is a small, strongly and
-statically typed, C-like language featuring SME primitives as first-class
-constructs.
+The language introduced in this thesis, the \gls{smeil}, is a small, strongly
+and statically typed, language with a C-like syntax featuring SME primitives as
+first-class constructs.
 % The
 % star of the thesis, SMEIL, can be seen as a ``c-light'' language featuring SME
 % primitives as first-class constructs
@@ -28,7 +28,10 @@ idiosyncrasies of either statically or dynamically typed languages. The body of
 SME code already existing for Python and C\#, also meant that we could do more
 than just hypothesizing about the consequences of our SMEIL design
 choices. Furthermore, it allowed us to identify common use-patterns in order to
-help determining the requirements of an SME language.
+help determining the requirements of an SME language. The C-like syntax of SMEIL
+was chosen since it is simple to parse and contains no significant
+whitespace. Furthermore, curly-braces are used to clearly distinguish blocks and
+semicolons clearly mark the end of statements.
 
 % This use-pattern based
 % design process \todo{finish or remove} In the design of the language, the
@@ -64,19 +67,15 @@ were phrased as:
 
 
 
-As we also alluded to in the introduction, the third principle on the list
-above, {\itshape Readability}, required SMEIL to have a human readable concrete
-syntax. However, very early on, we explored simply having an intermediate
-representation, using JSON as its encoding, for exchanging \gls{smeil} programs
-between frontends and backends. However, aside from the goal of readability, the
-design of a representation having no concrete syntax also proved tedious since
-it was impossible to reason about ``code'' which did not have an intuitive
-representation.
+\todo{rewrite} As we also alluded to in the introduction, the third principle on
+the list above, {\itshape Readability}, required SMEIL to have a human readable
+concrete syntax. However, very early on, we explored simply having an
+intermediate representation, using JSON as its encoding, for exchanging
+\gls{smeil} programs between frontends and backends. However, aside from the
+goal of readability, the design of a representation having no concrete syntax
+also proved tedious since it was impossible to reason about ``code'' which did
+not have an intuitive representation.
 
-The C-like syntax of SMEIL was chosen since it is simple to parse and contains
-no significant whitespace. Furthermore, curly-braces are used to clearly
-distinguish blocks and semicolons clearly mark the end of statements.
- 
 % In compiler literature, (e.g. Mogensen .. )The term \textit{Intermediate
 %   Language} is commonly associated with languages that sit at a lower level of
 % abstraction than the source languages that they are targeted by. They are
@@ -157,8 +156,9 @@ to that of the C pre-processor, possibly with implicit include guards preventing
 a single file from being imported more than once. The primary problem with this
 approach, despite being simpler to implement, is that include-based ``module''
 systems feel archaic and require the names of all modules to be
-unique. C-libraries gets around this by, as a convention, prefixing all function
-names with the name of the library, however this is not a very elegant solution.
+unique. Languages relying on the C pre-processor get around this by, as a
+convention, prefixing all function names with the name of the library, however
+we deemed this to be an overly restrictive requirement.
 
 The module system of SMEIL contributes towards the goal of creating reusable
 component libraries for SME. \todo{Did we mention that this was a goal?}
@@ -208,12 +208,15 @@ evaluated once per clock cycle.
 
 To simplify program analysis, it is not possible to declare new variables inside
 the body of a process. All variables used in the body must therefore be declared
-in the declarational part of the process ahead of use. We considered if this
-would unduly inconvenience users of SMEIL: For users of SMEIL as an intermediate
+in the declarational part of the process ahead of use.
+% We considered if this
+% would unduly inconvenience users of SMEIL:
+For users of SMEIL as an intermediate
 language, the inconvenience is very slight since it is easy to gather all
-variables used in a code block and add declarations. Human users will be
-slightly more inconvenienced, however, they were not part of the original design
-considerations.
+variables used in a code block and add declarations.
+% Human users will be
+% slightly more inconvenienced, however, they were not part of the original design
+% considerations.
 
 As can be seen from the grammar, networks may only contain static
 declarations. The reason for this is that the structure of an SME network must
@@ -227,6 +230,9 @@ a network is also allowed in the declarational part of a process. \todo{Why is t
 \todo{Explain the sync and async keywords}
 \todo{Explain that entities may be parameterized}
 \todo{Show examples of network and processes}
+
+Entities may take parameters which are set upon instantiation. These are
+described in the section referring to Entity instances below.
 
 %At the top level, modules consist of network- and process declarations. 
 
@@ -259,8 +265,7 @@ they are in some cases limited to integers.
   <const-decl> ::= `const' <ident> `:' <type-name> [ `=' <expression> ] `;'
 \end{grammar}
 
-Variables and constants are what you would expect: Variables and
-constants. Constants are used for declaring named constant values, for instance
+Constants are used for declaring named constant values, for instance
 \begin{lstlisting}[language=smeil]
 const secs_per_hour: uint = 3600;
 \end{lstlisting}
@@ -325,10 +330,12 @@ enum numbers {
 };
 \end{lstlisting}
 declares the enumeration {\ttfamily numbers} where the members are named in
-correspondence with their numeric values.
+correspondence with their numeric values. When enumeration members are used in
+an expression they are typed according to the largest member. So all of the
+members of the enumeration above has the type {\tt i4}.
 
-\todo{Write about how enums are typed as integers and the limitations
-  originating thereof, maybe}
+% \todo{Write about how enums are typed as integers and the limitations
+%   originating thereof, maybe}
 
 \subsubsection{Bus declarations}
 
@@ -375,8 +382,9 @@ goal to check this statically such that appropriate error messages are emitted.
 Similarly to variables, mentioned above, bus channels allow the specification of
 a {\ttfamily range}.
 
-Another modifier for buses is the {\ttfamily unique} keyword. Unfortunately, it
-is not currently implemented. The intent behind this was to allow buses with
+Another modifier for buses is the {\ttfamily unique} keyword. It is not
+currently implemented as it was not required by any of the SMEIL programs
+written as part of this work. The intent behind this was to allow buses with
 multiple writers. \todo{finish}
 
 % \begin{figure}
@@ -411,15 +419,15 @@ only a few restrictions.
 
 It is often convenient to have several instances of the same process that are
 parameterized with different connections or different constant
-values. Therefore, both processes and networks have parameters which are set
+values. Therefore, both processes and networks may have parameters which are set
 upon instantiation. Three types of parameters are supported: input- and output
-buses and constants. The {\tt instance} statement is used to instantiate an
+buses and constants. The {\tt instance} declaration is used to instantiate an
 entity with a specified set of parameters. An instance may optionally be given a
 name which can be used for referencing buses declared within the instantiated
 entity. \Cref{fig:comms} shows three different ways that a network may be
 constructed through bus references. If an instance is unnamed (anonymous),
 connections between the instances can be made by referring to buses through
-their public names\todo{Add reference to figure}.
+their public names as seen in \Cref{fig:directpublic}.
 
 Several anonymous instances of an entity may exist within the same network. To
 avoid ambiguous networks, a scope may only contain a single anonymous instance
@@ -455,6 +463,7 @@ network N ()
 \end{lstlisting}
   \caption{A network created by processes directly using buses through their
     hierarchical declarations.}
+  \label{fig:directpublic}
   \end{subfigure}
   \begin{subfigure}[t]{0.33\textwidth}
     \begin{lstlisting}[language=smeil]
@@ -803,15 +812,6 @@ value as there result. \todo{do we need more?}
 %\paragraph{BNF}
 \begin{grammar}
 
-  <type> ::= `i' <integer> (signed integer)
-  \alt `int' (arbitrary-width signed integer)
-  \alt `u' <integer> (unsigned integer)
-  \alt `uint' (arbitrary-width unsigned integer)
-  \alt `f32' (single-precision floating point)
-  \alt `f64' (double-precision floating point)
-  \alt `bool' (boolean value)
-  \alt `[' [ <expression> ] `]' <type> (array of type)
-
 
   <literal> ::= <integer>
   \alt <floating>
@@ -894,12 +894,30 @@ value as there result. \todo{do we need more?}
 
 \section{Type System}
 \label{sec:typesys}
+
+\begin{figure}
+\begin{grammar}
+  <type> ::= `i' <integer> (signed integer)
+  \alt `int' (arbitrary-width signed integer)
+  \alt `u' <integer> (unsigned integer)
+  \alt `uint' (arbitrary-width unsigned integer)
+  \alt `f32' (single-precision floating point)
+  \alt `f64' (double-precision floating point)
+  \alt `bool' (boolean value)
+  \alt `[' [ <expression> ] `]' <type> (array of type)
+\end{grammar}
+\caption{Grammar for type declarations in SMEIL.}
+\label{fig:smeilgrm}
+\end{figure}
+
 SMEIL is a strongly, statically typed language with a simple type system that is
 checked at compile-time. The static nature of hardware means that we want a
 type system which is capable of enforcing as many static invariants as
 possible. There is no implicit type coercion except between signed and unsigned
-integers. \todo{Describe what SMEIL would look like as dynamically typed
-  language} Consequently, there is no notion of truthness and only expressions of
+integers.
+% \todo{Describe what SMEIL would look like as dynamically typed
+%   language}
+Consequently, there is no notion of truthness and only expressions of
 boolean type can be used in conditionals. These restrictions are helpful for
 making sure that SMEIL is simple to transform to a wide variety of target
 languages; it is easy to transform a statically typed language to one which is
@@ -919,22 +937,23 @@ string. Fixed-length arrays of these primitive types may also be
 created. Floating-point numbers are only there for completeness but are
 currently not supported in hardware-translations due to the spotty
 floating-point support in FPGAs (although this situation is improving). The
-naming scheme for types is simple and follows a predictable pattern. For integer
-types, the prefixes {\ttfamily i} and {\ttfamily u} refers to signed and
-unsigned integers respectively. A prefix is followed by a number determining the
-bit-length of the type. For example, {\ttfamily i13} is a 13-bit signed
-integer. Unlimited-size integers are also supported (more on those in
-\Cref{sec:typing}) and are denoted simply as {\ttfamily int} and {\ttfamily
-  uint}. Finally, {\ttfamily bool}, {\ttfamily f32} and {\ttfamily f64} denotes
-booleans and single- and double-precision integers respectively. Array types are
-created by prefixing a type with a number of elements. For example, {\ttfamily
-  [10]i4} denotes an array of 10 4-bit signed integers.
+naming scheme for types is simple and follows a predictable pattern (the full
+grammar is shown in \Cref{fig:smeilgrm}). For integer types, the prefixes
+{\ttfamily i} and {\ttfamily u} refers to signed and unsigned integers
+respectively. A prefix is followed by a number determining the bit-length of the
+type. For example, {\ttfamily i13} is a 13-bit signed integer. Unlimited-size
+integers are also supported (more on those in \Cref{sec:typing}) and are denoted
+simply as {\ttfamily int} and {\ttfamily uint}. Finally, {\ttfamily bool},
+{\ttfamily f32} and {\ttfamily f64} denotes booleans and single- and
+double-precision integers respectively. Array types are created by prefixing a
+type with a number of elements. For example, {\ttfamily [10]i4} denotes an array
+of 10 4-bit signed integers.
 
 \begin{table}
   \centering
   \begin{tabular}{rll}
     \toprule
-    Type a & Type b & Unifies to \\
+    Type 1 & Type 2 & Unifies to \\
     \midrule
     i$a$ & i$b$ & i~$\max\{a, b\}$\\
     u$a$ & u$b$ & u~$\max\{a, b\} $\\
@@ -944,7 +963,7 @@ created by prefixing a type with a number of elements. For example, {\ttfamily
     uint & u$a$ & u~$a$\\
     int & i$a$ & i~$a$\\
     $[n]t_1$ & $[m]t_2$ & $t_1$ unified with $t_2$\\
-    $a$ & $a$ & $a$ \\
+    $t$ & $t$ & $t$ \\
     \multicolumn{2}{c}{otherwise} & error\\
     \bottomrule
   \end{tabular}
@@ -1069,19 +1088,20 @@ network N () {
 
 
 The type checker reduces buses to a representation consisting of channel names
-and their types. We refer to this as the bus {\itshape shape}. Two shapes unify if
-they have identical channel names and types. Since entities accept buses passed
-as parameters, we must make sure that no entity is instantiated with a bus that
-does not contain the expected channels. \Cref{fig:busuni} shows two processes
-that are both rejected by the bus shape unifier. In the program shown in
-\Cref{fig:incom1} a bus, {\ttfamily coords}, containing the channels {\ttfamily x} and {\ttfamily
-  y} is assigned to two processes {\ttfamily A} and {\ttfamily B}. This is fine for process
-{\ttfamily A} since it expects a bus with those two channels. However, its assignment
-to process {\ttfamily B} results in a failure since it expects a bus with channels
-{\ttfamily x} and {\ttfamily z}. In the other example, shown in \cref{fig:incom2}, a process
-{\ttfamily A} is instantiated twice with two buses {\ttfamily coordsA} and {\ttfamily coordsB}
-containing differently named channels. This fails because the shapes of the
-buses cannot be unified.
+and their types. We refer to this as the bus {\itshape shape}. Two shapes unify
+if they have identical channel names and types. Since entities accept buses
+passed as parameters, we must make sure that no entity is instantiated with a
+bus that does not contain the expected channels. \Cref{fig:busuni} shows two
+processes that are both rejected by the bus shape unifier. In the program shown
+in \Cref{fig:incom1} a bus, {\ttfamily coords}, containing the channels
+{\ttfamily x} and {\ttfamily y} is assigned to two processes {\ttfamily A} and
+{\ttfamily B}. This is fine for process {\ttfamily A} since it expects a bus
+with those two channels. However, its assignment to process {\ttfamily B}
+results in a failure since it expects a bus with channels {\ttfamily x} and
+{\ttfamily z}. In the other example, shown in \cref{fig:incom2}, a process
+{\ttfamily A} is instantiated twice with two buses {\ttfamily coordsA} and
+{\ttfamily coordsB} containing differently named channels. This fails because
+the shapes of the buses cannot be unified.
 
 \todo{How this is implemented?}
 
@@ -1104,11 +1124,13 @@ subtle bugs in the program.
 % to another process directly from the code of a process. Alternatively, process
 % interconnects can be explicitly declared in network constructs.
 
-All declarations are private and may only be used within entity where they are
-declared. The exception to this is buses which, as seen in the previous section,
-constitutes the public interface of an entity, used for establishing
-communication between two entities. Since variables may only be declared in the
-declarational part of a process \todo{finish or remove} The detailed scoping
+All declarations are private and may only be used within the entity where they
+are declared. The exception to this is buses which, as seen in the previous
+section, constitutes the public interface of an entity, used for establishing
+communication between two entities.
+% Since variables may only be declared in the
+% declarational part of a process \todo{finish or remove}
+The detailed scoping
 rules for SMEIL are as follows:
 
 \begin{description}
@@ -1206,19 +1228,20 @@ process, labeled ``='' simply passes along the value received while the other
 process increments it by a constant value passed as a parameter. The source code
 for the example is shown in \Cref{fig:addone.sme}.
 
-Each of the two processes is declared using a {\ttfamily proc} block. Immediately
-following, are the declarations belonging to the processes. In this case, both
-of the processes declares the bus used for sending their output values. Both
-processes are also parameterized by a bus on which they receive their input
-values. The {\ttfamily incr\_const} process takes an additional parameter which is a
-constant value added to the input value. The curly-braces in a process contain
-the statements constituting its procedural parts, that is, the actions that are
-performed when the process is executed during a clock cycle. The network {\ttfamily
-  incr} instantiates the two processes and connects the output one to the input
-of the other. Furthermore, for the instance {\ttfamily plusone\_inst} the constant
-{\ttfamily val} parameter is also set, making the {\ttfamily incr\_const} process 1add 10 to
-the value it receives every time its run. Declarations may be given in any
-order, allowing the mutually dependent process instantiations in the {\ttfamily incr}
+Each of the two processes is declared using a {\ttfamily proc}
+block. Immediately following, are the declarations belonging to the
+processes. In this case, both of the processes declares the bus used for sending
+their output values. Both processes are also parameterized by a bus on which
+they receive their input values. The {\ttfamily incr\_const} process takes an
+additional parameter which is a constant value added to the input value. The
+curly-braces in a process contain the statements constituting its procedural
+parts, that is, the actions that are performed when the process is executed
+during a clock cycle. The network {\ttfamily incr} instantiates the two
+processes and connects the output one to the input of the other. Furthermore,
+for the instance {\ttfamily plusone\_inst} the constant {\ttfamily val}
+parameter is also set, making the {\ttfamily incr\_const} process 1add 10 to the
+value it receives every time its run. Declarations may be given in any order,
+allowing the mutually dependent process instantiations in the {\ttfamily incr}
 network.
 
 

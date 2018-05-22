@@ -20,10 +20,10 @@ with the C API of the library or by using the provided command line utility.
   contain their own data generation p rocess (see \Cref{sec:7seg} for an example
   of such a network). SMEIL used like this is not very useful as it can only
   produce output through {\ttfamily trace} statements (\Cref{sec:langref}).
-  \item[Co-simulation of SMEIL.] The most common intended usage scenario for
-    SMEIL is to use it together with an SME library for a general purpose
-    language. We describe this concept in further details in the following
-    section.
+\item[Co-simulation of SMEIL.] The most common intended usage scenario for SMEIL
+  is to use it together with an SME library for a general purpose language. The
+  full details of the co-simulation interface of SMEIL were previously given in
+  \Cref{sec:cosim}.
 \end{description}
 
 \label{sec:libsmeimpl}
@@ -101,24 +101,26 @@ in \Cref{fig:overview} and the individual steps are described below.
 invoked (see \Cref{sec:using}) the SMEIL source is parsed and the resulting AST
 is passed through the import resolver. Here, the code is scanned for the
 presence of import statements. If any are found, the source files containing the
-imported modules are parsed in a recursive manner. The tree of imported modules
-is then flattened by renaming hierarchical references. This process seek to
-simplify the subsequent phases of the compilation process as module hierarchies
-do not have to be considered. The renamings are tracked an passed on to the
-following stages so that a reverse mapping may be performed later, for example
-for error messages.
+imported modules are parsed in a recursive manner. Whenever we recursively
+import a module, we pass along the list of imported entities such that only the
+requested entities are imported. The tree of imported modules is then flattened
+by renaming hierarchical references. This process seek to simplify the
+subsequent phases of the compilation process as module hierarchies do not have
+to be considered. The renamings are tracked an passed on to the following stages
+so that a reverse mapping may be performed later, for example for error
+messages.
 
-In more detailed terms, the algorithm for performing imports work as
-follows:\todo{Merge this paragraph with the previous} A
-module import is handled through recursive descendant evaluation of imports
-where different information is passed on the outgoing and incoming edges of the
-module dependency graph. On forward edges, we pass the import
-``paramteres'' of a module and on the backward edges we pass the renamed
-module. Every time something is passed on an incoming edge, it is folded (merge)
-into the code on that level. Before merging, all top-level names and references
-to those names are renamed such that there is no name-clashes with the code that
-the module is being merged into. During this process, we also ensure that all
-imported names actually exists and produce a error if they do not.
+% In more detailed terms, the algorithm for performing imports work as
+% follows:\todo{Merge this paragraph with the previous} A
+% module import is handled through recursive descendant evaluation of imports
+% where different information is passed on the outgoing and incoming edges of the
+% module dependency graph. On forward edges, we pass the import
+% ``paramteres'' of a module and on the backward edges we pass the renamed
+% module. Every time something is passed on an incoming edge, it is folded (merge)
+% into the code on that level. Before merging, all top-level names and references
+% to those names are renamed such that there is no name-clashes with the code that
+% the module is being merged into. During this process, we also ensure that all
+% imported names actually exists and produce a error if they do not.
 
 % The process of importing a module goes through several steps. The aim of this
 % process is to end up with a flattened and normalized module and thus to discard
@@ -132,12 +134,12 @@ imported names actually exists and produce a error if they do not.
 \subsection{Type Checking} The code is then passed through the type checker
 which enforce the typing rules described in \Cref{sec:typesys}. A single
 abstract representation of SMEIL is used throughout the compiler. This is
-sometimes inconvenient and code simplifications could be made if a simplified
-intermediate representation was used within the compiler. However, this
-disadvantage is offset by the ability to reconstruct the original source code
-with the spliced types. Furthermore, maintaining an unchanged representation of
-the original source code means that the generated code more closely corresponds
-to the source code.
+sometimes inconvenient and code simplifications could be made if an intermediate
+representation was used within the compiler. However, this disadvantage is
+offset by the ability to reconstruct the original source code with the spliced
+types. Furthermore, maintaining an unchanged representation of the original
+source code means that the generated code more closely corresponds to the source
+code.
 
 The type checker makes two passes through the code.
 \begin{itemize}
@@ -164,11 +166,12 @@ order. Requiring declarations to be made ahead-of-use would make the code in
 many of the examples shown throughout this thesis significantly more convoluted.
   
 \subsection{Analysis} The analysis phase examines the structure of a network.
-This is used for determining the top-level entity and for building the runtime
-representation used for simulation. From here, the AST may take two paths
-depending on the mode of invocation requested by the user. It is either passed
-on directly to the code generator or simulated. If the AST was already retyped
-by the simulator, it is passed directly to the code generator.
+This is used for determining the top-level entity of the network which is needed
+both for deriving a runtime representation of the network and for subsequent
+code generation. From here, the AST may take two paths depending on the mode of
+invocation requested by the user. It is either passed on directly to the code
+generator or simulated. If the AST was already retyped by the simulator, it is
+passed directly to the code generator.
 
 \subsection{Simulation}
 Simulation is performed to test a design. During the simulation, the value
@@ -203,54 +206,85 @@ are shown to the user using nicely formatted concrete SMEIL syntax.
 \section{Runtime Representation of SMEIL}
 Since entities in SMEIL can be instantiated, there is not a one-to-one
 correspondence between the number of entity and bus declarations and the number
-of objects in the runtime representation.
+of objects in the runtime representation. For example, the following network
+\begin{smeilcode2}
+proc A ()
+    instance b1 of B();
+    instance b2 of B();
+{}
 
-Here, we describe the algorithm used
-to go from program declaration to runtime objects. \todo{finish}
+proc B ()
+    instance c1 of C();
+    instance c2 of C();
+    instance c3 of C();
+{}
 
-Like the handling of import statements, the algorithm for establishing a runtime
-representation of SMEIL 
+proc C ()
+{}
 
-\todo{Describe the recursive algorithm used for creating a runtime
-  representation of an SMEIL}
+network N () {
+    instance _ of A();
+}
+\end{smeilcode2}
+forming a tree of instances, will at runtime contain 6 instances of the {\tt C}
+process even though only 3 {\tt instance} declaration for instantiating it are
+present in the code. Therefore, the simple solution of scanning the code for
+{\tt instance} statements and creating one process instance per occurrence will
+not work.
 
-The input to the process is an SMEIL program and the result is a graph
-containing process instances with links to the buses that connects
-them.
-The key insight of this algorithm is that a network, connecting two processes,
-for example
+% Here, we describe the algorithm used
+% to go from program declaration to runtime objects. \todo{finish}
+
+% Like the handling of import statements, the algorithm for establishing a runtime
+% representation of SMEIL 
+
+% \todo{Describe the recursive algorithm used for creating a runtime
+%   representation of an SMEIL}
+
+% The key insight of this algorithm is that a network, connecting two processes,
+% for example
+
+Another problem to handle is seen in the following network block
 \begin{smeilcode}
   network n() {
     instance i1 of p1(p2.b);
     instance i2 of p2(p1.b);
   }
 \end{smeilcode}
-instantiates two processes i1 and i2 and creates a connection between them. What
-makes this hard, is that even though the connection between the two processes is
-established in the network {\tt n}, we need to examine the declarational parts
-of the processes {\tt i1} and {\tt i2} in order to know which buses to
-connect. Another thing to note is that networks have no effect on the runtime
-representation of an SMEIL program.
+which instantiates two processes i1 and i2 and creates a connection between
+them. What makes this hard, is that even though the connection between the two
+processes is established in the network {\tt n}, the buses which forms the
+connections are defined within {\tt p1} and {\tt p2} processes. Therefore, we
+need to create the {\tt i1} and {\tt i2} instances in order to know which buses
+to connect.
+
+% Another thing to note is that networks have no effect on the runtime
+% representation of an SMEIL program.
+
+The input to the process is an SMEIL program and the result is a graph
+containing process instances with links to the buses that connects
+them.
+
 
 This runtime representation is established through the following
 algorithm:
 \begin{enumerate}
-  \item For every {\tt instance} instance declaration encountered referencing a
-    process we create a process representation containing a symbol table. We
-    fill this symbol table with all declarations {\itshape except} instance
-    found in the declarational part of the process.
+\item For every {\tt instance} declaration encountered referencing a process we
+  create a runtime process containing a symbol table. We fill this symbol table
+  with all declarations {\itshape except} instance found in the declarational
+  part of the process.
     
   \item For every such newly created tree node we create a bus instance for
     every bus declaration in the entity.
   \item Then, every instance 
 \end{enumerate}
 
-\section{Design challenges}
-The key challenge faced in the design of libsme was that, at any stage in the
-compiler, we had to be able to return to the original representation.
-TODO: Discuss issues related to maintaining a single internal representation
-throughout the compiler which is reconstructable to the original concrete
-syntax.
+% \section{Design challenges}
+% The key challenge faced in the design of libsme was that, at any stage in the
+% compiler, we had to be able to return to the original representation.
+% TODO: Discuss issues related to maintaining a single internal representation
+% throughout the compiler which is reconstructable to the original concrete
+% syntax.
 
 % Early on, we considered a particular challenge that this project would
 % pose. Primarily due to the following design goals
@@ -286,12 +320,13 @@ was chosen in particular because:
   compiler-related software, due to their support for Algebraic Data Types
   (ADTs) and pattern-matching. Also, a wide range of libraries exists for
   supporting the implementation of for example parsers and pretty-printers.
-\item The type-safety of Haskell trades slightly slower development pace for a
+\item The type-safety of Haskell trades a slightly slower development pace for a
   significant reduction of time spent debugging.
 \item The type system also significantly aids refactoring, something which
-  proved useful several times while developing this project. For
-  example, changing a fundamental data structure in Python can be a daunting
-  task since 
+  proved useful several times while developing this project. When a fundamental
+  data structure is changed in a Haskell program, the type system ensures that 
+  % For
+  % example, changing a fundamental data structure in Python can be a daunting
 \end{itemize}
 
 
@@ -301,9 +336,10 @@ functions of the C-API is implemented in a module is $\sim 500$ SLOC of C. The
 VHDL parsing and quasiquotation library developed for use with this project
 consists of approximately 5500 SLOC of Haskell.
 
-The implementation has several rough areas, but has been written with future
-extensions in mind. It also pays particular attention to usability-related
-features such as providing understandable error messages.
+The implementation currently has several rough edges, but its fundamental
+structure is sane and it has been written with future extensions in mind. It
+also pays particular attention to usability-related features such as providing
+understandable error messages.
 
 %%% Local Variables:
 %%% mode: latex

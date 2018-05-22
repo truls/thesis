@@ -13,13 +13,14 @@ reader. Additionally, we motivate the need for custom hardware.
 The Synchronous Message Exchange model was conceived based on the experiences of
 a masters thesis project \cite{Skaarup14} which attempted to generate a hardware
 description from a model of a vector processor. The vector processor (described
-in~\cite{rehr2013bpu}) was modeled with CSP using PyCSP, a CSP library for
-Python. The initial experiences using CSP for modeling the processor were
-promising. Especially the process abstraction of CSP proved to be well suited
-for representing the discrete components of a hardware design. Furthermore, the
-modularity originating from the {\itshape shared-nothing} property of CSP was
-advantageous as it allowed seamlessly interchanging fine- and course grained
-implementations of the same discrete component.
+in~\cite{rehr2013bpu}) was modeled with \gls{csp} using
+PyCSP~\cite{bjorndalen2007pycsp}, a CSP library for Python. The initial
+experiences using CSP for modeling the processor were promising. Especially the
+process abstraction of CSP proved to be well suited for representing the
+discrete components of a hardware design. Furthermore, the modularity
+originating from the {\itshape shared-nothing} property of CSP was advantageous
+as it allowed seamlessly interchanging fine- and course grained implementations
+of the same discrete component.
 
 \begin{figure}
   \centering
@@ -30,7 +31,7 @@ implementations of the same discrete component.
   \label{fig:clocked}
 \end{figure}
 
-When the master thesis project (mentioned above) later attempted to convert the pure
+When the master thesis project, mentioned above, later attempted to convert the pure
 CSP model to a hardware description, they found the CSP approach less apt.
 % which later attempted to convert
 % the CSP model to an actual hardware description found the pure CSP approach less
@@ -42,8 +43,8 @@ forward synchronously by a clock.
 % Enforcing globally synchronous communication using CSP is hard, since
 % CSP is inherently asynchronous.
 Thus, to accurately model hardware using CSP, this clock had to be emulated by
-adding a single clock process with broadcasting channels to every other process
-in the network. Back-channels also had to be inserted for notifying
+adding a single clock process with broadcasting channels to every process in the
+network. Back-channels also had to be inserted for notifying
 % from every process in the
 % network to the clock process
 the clock process when a process had finished running. Furthermore,
@@ -72,10 +73,10 @@ inter-process dependencies.
 % This made it simple to compose networks by making multiple
 % instances of the same process.
 
-These experiences discarded the idea of using pure CSP as a hardware design
-tool, but lead to the conception of a derived model, SME, which maintained the
-concepts of CSP that were found beneficial while adding a new, globally
-synchronous, communication model~\cite{vinter2014synchronous}.
+Based on these experiences, the idea of using pure CSP as a hardware design tool
+was discarded. In its place a derived model, called SME, was conceived which
+maintained the concepts of CSP that were found beneficial while adding a new,
+globally synchronous, communication model~\cite{vinter2014synchronous}.
 
 \subsection{The Model}
 The key concept of the SME model is the introduction of an implicit clock,
@@ -92,7 +93,7 @@ synchronous message passing semantics.
 % \subsubsection{SME components}
 Building on its CSP roots, the fundamental unit in an SME network is the
 {\itshape process}.  Networks are built by connecting processes through buses.
-SME uses use the name ``bus'' instead of ``channel'', to reinforce the hardware
+SME buses use the name ``bus'' instead of ``channel'', to reinforce the hardware
 analogy and clarify its semantic equivalences with a physical signal bus found
 in hardware. Furthermore, where channels in traditional CSP only support a
 single value, a bus in SME is a bundle of individual channels connected to
@@ -236,7 +237,7 @@ cycle 9, the value written by $P_2$ is 5.
       \node[proc style] (impl) {SME model};
       \node[rep style,below=0.7cm of impl] (sim) {{\bfseries SME
         lib}\\Simulation\\Testing\\Code gen};
-      \node[proc style,right=1cm of sim] (tb) {Test bench};
+      \node[proc style,right=1cm of sim] (tb) {Test-bench};
       \node[proc style,above=0.5cm of tb] (trace) {CSV trace};
       \node[proc style,below=0.3cm of tb] (code) {VHDL Code};
       \node[gray,draw=gray,rep style,right=1cm of tb] (verifies) {Verifies};
@@ -277,11 +278,11 @@ read by the SME library which simulates the design and runs the related tests in
 order to verify correctness. Three results are generated from the simulation: A
 rendering of the SME design in a HDL (only VHDL has been used so far), a
 test-bench written in the HDL used for verifying the generated code and finally,
-a CSV-file containing a value trace. The CSV-file is read by the test-bench
-which uses it as a source of input values to provide to the hardware model and
-for checking that its output values are as expected. The generated HDL code is
-then passed to a vendor tool for synthesis and eventual implementation on
-hardware.
+a \gls{csv}-file containing a value trace. The \gls{csv}-file is read by the
+test-bench which uses it as a source of input values to provide to the hardware
+model and for checking that its output values are as expected. The generated HDL
+code is then passed to a vendor tool for synthesis and eventual implementation
+on hardware.
 
 The present work only affects the stages up until passing the generated HDL to a
 vendor tool.
@@ -326,7 +327,8 @@ than a day.
     \centering
     \includegraphics[width=\textwidth]{figures/addnet}
   \end{minipage}
-  \caption{An implementation of an adder in the original SME framework. Figure
+  \caption{An implementation of an adder (left) and a network using it (right)
+    written using the original SME framework. Figure
     from~\cite{vinter2014synchronous}.}
   \label{fig:adder}
 \end{widefigure}

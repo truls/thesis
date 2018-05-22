@@ -144,11 +144,14 @@ follows:
 We have presented SMEIL, a DSL for implementing SME networks and demonstrated
 its practical use through several examples. Although we have focused on using it
 as a primary implementation language for SME networks, it is also usable as an
-intermediate language for other SME implementations. SMEIL is based on the
-structural components of the SME model and provides a high-level C-like syntax
-with constructs commonly found in general-purpose imperative languages. This is
-needed in order to ensure that SME networks implemented in general-purpose
-languages can be translated without requiring sophisticated transformations.
+intermediate language for other SME implementations. We have shown this by
+providing a SMEIL code-generation backend for a Python to VHDL compiler.
+
+SMEIL is based on the structural components of the SME model and provides a
+high-level C-like syntax with constructs commonly found in general-purpose
+imperative languages. This is needed in order to ensure that SME networks
+implemented in general-purpose languages can be translated without requiring
+sophisticated transformations.
 
 The type-system presented supports bit-precise types which is important for a
 hardware-targeted language. However, the requirement to specify a fixed
@@ -162,7 +165,7 @@ channel communications is recorded. SMEIL compiles to readable VHDL code which
 can be used for a subsequent hardware implementation. Additionally, a test-bench
 is generated which can be used to verify the correctness of the generated
 code. The test-bench uses the trace recorded during simulation to allow
-continuous verification of the generated code even following manual refinement.
+continuing verification of the generated code even following manual refinement.
 
 For testing SMEIL networks directly, an interface is provided for performing
 co-simulation with SME networks written in general-purpose languages. This

@@ -26,12 +26,12 @@ making it easy to identify from where a particular section of the VHDL code was
 generated.
 
 For verifying the generated VHDL code, a test-bench is also generated. The
-test-bench is connected to the {\ttfamily exposed} buses of the SMEIL program. The
-CSV-trace file containing the values recorded during simulation is used by the
-VHDL test bench to drive inputs and verify outputs.
+test-bench is a VHDL program which connects to the {\ttfamily exposed} buses of
+the SMEIL program. The CSV-trace file containing the values recorded during
+simulation is used by the VHDL test bench to drive inputs and verify outputs.
 
 Alongside the generated code, a {\ttfamily Makefile} is generated for building
-and testing the VHDL code using the GHDL simulator.
+and testing the VHDL code using the GHDL~\cite{ghdl} simulator.
 
 Integer types of SMEIL are represented in VHDL using the types provided by the
 standard {\ttfamily ieee.numeric\_std} package. This package provides functions for

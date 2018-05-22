@@ -5,7 +5,8 @@ This appendix contains information on how to install and run the SMEIL system in
 order to reproduce the runs shown throughout the thesis. These instructions has
 only been tested on a Fedora 27 machine and uses software versions (except
 stack) from its standard repositories. We expect them to work on any recent
-Linux distribution although we make no guarantees.
+Linux distribution although we make no guarantees. These instructions are
+superseded by any instructions which may appear online
 
 
 
@@ -13,9 +14,11 @@ Linux distribution although we make no guarantees.
 The required dependencies for building and running are listed below
 \begin{itemize}
 \item {\ttfamily stack} --- \url{https://haskell-lang.org/get-started}
+  {\ttfamily 
 \item gcc
 \item python3.6
 \item perl
+\item pip3}
 \end{itemize}
 
 \noindent The individual software components referenced throughout this thesis:
@@ -26,7 +29,22 @@ The required dependencies for building and running are listed below
 \item almique --- \url{https://github.com/truls/almique}
 \end{itemize}
 
+\section{Installation}
+\subsection{PySME}
+\begin{enumerate}
+\item Go to PySME directory
+  \item Run {\ttfamily pip3 install --user .}
+\end{enumerate}
 
+\subsection{libsme}
+\begin{itemize}
+\item Go to the \libsme{} directory
+\item Run {\ttfamily make} (this will take a while)
+\item When {\ttfamily make} completes it has created the \texttt{tools/runsme}
+  script. Copy this script somewhere in your \texttt{\$PATH}.
+\end{itemize}
+
+\subsection{almique}
 
 
 %%% Local Variables:

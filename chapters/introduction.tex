@@ -1,25 +1,27 @@
 \chapter{Introduction}
 
 Special-purpose hardware has a wide range of different uses and can provide a
-significantly improved performance-to-watt ratio compared to GPGPUs and CPUs for
-many applications. Unfortunately, the prevalence of such hardware is limited, in
-part, by poor design tools. Traditional hardware design workflows utilize
-{\itshape Hardware Description Languages} (HDLs) such as \gls{vhdl} or Verilog
+significantly improved performance-to-watt ratio compared to \glspl{gpgpu} and
+\glspl{cpu} for many applications. Unfortunately, the prevalence of such
+hardware is limited, in part, by poor design tools. Traditional hardware design
+workflows utilize
+%{\itshape Hardware Description Languages} (HDLs)
+\glspl{hdl} such as \gls{vhdl} or Verilog
 which require the programmer to specify the hardware design at a very low
 level. While this enables complete control over the resulting hardware, the
 productivity sacrifice is significant when compared to using general-purpose
 languages for writing software. Additionally, all aspects of a hardware design
 are often written in a HDL, including code for testing and
-verification. Traditional HDLs are fundamentally unfit for performing tasks
+verification. Traditional \glspl{hdl} are fundamentally unfit for performing tasks
 commonly needed for simulating input for a design, such as reading and decoding
 an image file. Performing them are tedious at best and impossible at worst.
 
 In the past few decades, there has been a significant interest in tools that
 improve the productivity of hardware design workflows. Vendors of reconfigurable
-hardware have focused primarily on {\itshape High-Level Synthesis} (HLS). These
+hardware have focused primarily on \gls{hls}. These
 utilities transform algorithmic descriptions written in a general-purpose
 language to an HDL-description that can be implemented on hardware. The source
-languages for the most common HLS tools are C (e.g. Vivado HLS~\cite{vivadohls})
+languages for the most common \gls{hls} tools are C (e.g. Vivado HLS~\cite{vivadohls})
 and OpenCL (e.g. Altera OpenCL~\cite{aocl}).
 
 Hardware is inherently parallel, and utilizing this parallelism is imperative
@@ -31,9 +33,9 @@ resulting hardware implementation depend greatly on the aptitude of the
 programmer to add these annotations correctly. This requires a deep
 understanding of the transformation process and the underlying architecture of
 the targeted hardware. The difficulties of creating auto-parallelizing compilers
-for impure general-purpose languages are
-well-known~\cite{banerjee1976data,bodik2000abcd} in particular due to the
-challenges of resolving data dependencies. HLS utilities provide no
+for impure general-purpose languages are and arise well-known in particular due
+to the challenges of resolving data
+dependencies~\cite{banerjee1976data,bodik2000abcd}. HLS utilities provide no
 revolutionary improvements in this regard and thus have a tendency to retain
 major sequential parts of the original program causing an inefficient hardware
 design.
@@ -43,8 +45,8 @@ is currently gaining popularity. This option seems more attractive as OpenCL is
 already an explicitly parallel language targeting heterogeneous computing
 platforms. However, OpenCL code needs to be tuned specifically to each target
 platform in order to achieve optimal performance~\cite{chen2012using}. Most
-existing OpenCL programs are written with GPGPUs in mind. Thus, these programs
-must be rewritten to perform optimally on FPGAs, again requiring heavy use of
+existing OpenCL programs are written with \glspl{gpgpu} in mind. Thus, these programs
+must be rewritten to perform optimally on \glspl{fpga}, again requiring heavy use of
 annotations. This reduces the portability and productivity advantages of OpenCL.
 % Furthermore, OpenCL is most efficient when
 % applied to problems which exhibit a high-degree of data parallelism, but
@@ -57,7 +59,7 @@ components.
 To approach this problem from a different angle, the Synchronous Message
 Exchange (SME) model\cite{vinter2015bus,vinter2014synchronous} has been
 previously introduced. SME is similar to \gls{csp}~\cite{csp}, but replaces the
-asynchronous communication of CSP with globally synchronous message passing
+rendezvous-style communication of \gls{csp} with globally synchronous message passing
 between processes driven by a hidden clock\footnote{An extended introduction to
   the SME model is given in \Cref{sec:sme}}.
 % This communication model mimics hardware where all signal propagations
@@ -78,7 +80,7 @@ SME by itself is just a model, which is not tied to a specific programming
 language or implementation. Currently, libraries for implementing SME models
 exist for the general-purpose languages C++~\cite{asheim2015},
 C\#~\cite{skovhede2016building} and Python~\cite{asheim2016vhdl}. The latter two
-have code-generation backends targeting VHDL. In practice, it has proven
+have code-generation backends targeting \gls{vhdl}. In practice, it has proven
 impossible to maintain feature parity between these independent implementations
 due to the code-duplication involved. This created a demand to unify the common
 backend components of these divergent code bases. To achieve this, a common
@@ -208,7 +210,7 @@ alter the {\itshape fundamental} qualities of SME as a hardware design tool.
 
 
 \section{Contributions}
-We summarize the contributions of the thesis as follows
+We summarize the contributions of the thesis as follows:
 
 \begin{itemize}
 \item We present a new language for implementing SME networks. The language is
@@ -234,17 +236,17 @@ We summarize the contributions of the thesis as follows
 \end{center}
 
 \section{Notation and Definitions}
-We frequently refer to hardware-design nomenclature: A {\itshape test-bench} is a
-piece of software used for testing a hardware model by providing input data and
-verifying its output. {\itshape Synthesis} is the process of transforming a
+We frequently refer to hardware-design nomenclature: A {\itshape test-bench} is
+a piece of software used for testing a hardware model by providing input data
+and verifying its output. {\itshape Synthesis} is the process of transforming a
 hardware-model written in a HDL to an actual description which can be
 implemented on hardware. We will occasionally refer to ``assigning a
 value''. The ``value'' here may, unless specified otherwise, be any assignable
 SMEIL construct (either a variable or a bus channel).
 
-\section{Thesis Structure}
-The remainder of the thesis is structured as follows.
-\todo{finish}
+% \section{Thesis Structure}
+% The remainder of the thesis is structured as follows.
+% \todo{finish}
 
 
 % \section{Contributions}

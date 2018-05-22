@@ -4,10 +4,12 @@
 In this chapter, we first present an example of SMEIL used as an \gls{il}
 followed by four small examples implemented in SMEIL: A model watch using a
 7-segment display, the core of a trading chip, a process for binning colors
-based on intensity and finally a MD5 hash bruteforcer.  \todo{Motivate why
-  these examples were picked in particular}
+based on intensity and finally a MD5 hash bruteforcer.
+% \todo{Motivate why
+%   these examples were picked in particular}
 
-Information on how to reproduce the runs shown below is given in \Cref{app:inst}.
+Information on how to reproduce the runs shown below is given in
+\Cref{app:inst}.
 
 
 \section{SMEIL as an intermediate language}
@@ -294,15 +296,16 @@ network SomeOps ()
   The example implements a model of an old-fashioned digital watch displaying
   the current time using 6 7-segment digits. The layout is depicted in
   \Cref{fig:7seg}. The timer process continuously increments a numeric value,
-  representing the number of seconds passed since turn-of-day, which is stored
-  in the state of the process. For every cycle, the current number of seconds is
-  emitted. This number is then broadcasted through a shared bus to a number of
-  calculating processes which uses simple integer arithmetic to calculate the
-  number of hours, minutes and seconds respectively. To better reflect an actual
-  hardware implementation, encoder and decoder processes are inserted on the
-  wire leading to the digit. They, respectively, encodes to and decodes from the
-  bit-pattern (represented as hexadecimal numbers in the {\tt encode} and {\tt
-    decode} processes) used to light up parts of the 7-segment display.
+  representing the number of seconds passed since the beginning of the day,
+  which is stored in the state of the process. For every cycle, the current
+  number of seconds is emitted. This number is then broadcasted through a shared
+  bus to a number of calculating processes which uses simple integer arithmetic
+  to calculate the number of hours, minutes and seconds respectively. To better
+  reflect an actual hardware implementation, encoder and decoder processes are
+  inserted on the wire leading to the digit. They, respectively, encodes to and
+  decodes from the bit-pattern (represented as hexadecimal numbers in the {\tt
+    encode} and {\tt decode} processes) used to light up parts of the 7-segment
+  display.
 
   For representing the current time during simulation, the decoder processes are
   connected to a process which prints the current time in a readable format. The
@@ -314,6 +317,23 @@ network SomeOps ()
   drive. This network is implemented purely in SMEIL without depending on
   external processes for stimuli.
 
+  Since this example contains its own data generation source it is run using the
+  command-line interface of \libsme{}. The result of executing this network is
+  shown below.
+\begin{verbatim}
+$ smec -i 7seg.sme -s 50  
+00:00:00
+00:00:00
+00:00:00
+00:00:00
+00:00:01
+00:00:02
+00:00:03
+[..]
+\end{verbatim}
+  Note that the depth of the network is visible in that it takes a few cycles
+  before the first time has propagated to the printer.
+  
   \begin{widefigure}
     \centerfloat
 \begin{lstlisting}[multicols=2, language=smeil]
@@ -454,6 +474,13 @@ improvements. For example, by implementing the ``unparsing'' method described in
 \cite{ramsey1998unparsing} which, based on knowledge about operator precedence
 in the target language, reverse-transforms an AST using as few parentheses as
 possible.
+
+Since this network gets its data through Co-simulation with a PySME
+network. Therefore, it is executed by running the Python-end of the network. As
+input to this network we provide three separate images. As output, it simply
+prints the pixel intensity counts. In \Cref{sec:perf}, we provide a benchmark
+for comparing the time required for running this network on the three provided
+images both by simulating the original SMEIL code and the generated VHDL code.
 
 \begin{widefigure}
 
@@ -611,8 +638,21 @@ In an actual trading chip, the data generator is replaced with actual stock
 prices arriving through a network interface and the plot is replaced by market
 transactions. Both the testing and verification processes leverage existing
 Python libraries. The Brownian bridge generator is implemented using NumPy while
-the plot is made using matplotlib. Implementing these test processes in VHDL
+the plot is made using {\ttfamily matplotlib}. Implementing these test processes in VHDL
 would be a massive undertaking, with Python, it is quite simple.
+
+We execute this example by calling the Python script containing the PySME part
+of the implementation which will then communicate with the part of the network
+written in SMEIL via the Co-Simulation interface. The Python part of the network
+shows a graph visualizing the moving averages.
+
+The test-bench generated along with the VHDL code runs without errors and prints
+the message
+\begin{verbatim}
+ewma_tb.vhdl:166:13:@1275001275ns:(report note): completed
+  successfully after 255 clockcycles
+\end{verbatim}
+on completion.
 
 \begin{widefigure}
   \begin{smeilcode2}
@@ -649,7 +689,8 @@ sync proc merge (in long,
 }
 
 network ewma () {
-  const decays: [2]uint = [2, 3];
+  const decay1: int = 2;
+  const decay2: int = 3;
 
   exposed bus stream {
     val: int;
@@ -663,9 +704,9 @@ network ewma () {
   };
 
   instance short of calc 
-      (data: stream, decay: decays[0]);
+      (data: stream, decay: decays1);
   instance long of calc
-      (data: stream, decay: decays[1]);
+      (data: stream, decay: decays2);
   instance _ of merge
       (long: long.result,
        short: short.result,
@@ -677,7 +718,9 @@ network ewma () {
 
 \end{widefigure}
 
+
 \section{MD5 bruteforcer}
+\label{sec:md5}
 \begin{figure}%[tb]
   \centering
   \resizebox{.6\linewidth}{!}{
@@ -734,7 +777,25 @@ process for calculating and MD5 hash is shown in \Cref{fig:smeilhash}. The
 process receives the string that should be hashed through the bus passed as its
 {\ttfamily input} parameter. The calculated hash is then sent on the {\ttfamily
   hashes} bus which is read by the verification process.
-% Also note the close
+
+Since this network contain its own data generation source this network is run
+using the command line interface of \libsme. A session is shown below
+\begin{verbatim}
+$ smec -i md5-simple.sme --no-warnings -s 50 
+[..]
+verifying hash 3141438837 2285911344 1677794538 2336503479
+verifying hash 1449451250 1644770476 3741827633 1220464617
+1449451250 1644770476 3741827633 1220464617 found
+\end{verbatim}
+where the bruteforcer network is configured to run for 50 cycles. The hash to
+look for has been pre-programmed in the verifier. Every tested hash is printed
+until the correct one is found. We have tested this implementation by testing it
+against the C-implementaiton of the same algorithm and making sure that they
+produce the same result. We note that support for printing hexadecimal numbers
+should defenitely be added in future versions of SMEIL.
+
+
+%Also note the close
 % resemblance of the SMEIL implementation of the algorithm to an eq
 
 \begin{widefigure}
@@ -816,6 +877,7 @@ hashes.w1 = w[1];
 \end{widefigure}
 
 \section{Performance}
+\label{sec:perf}
 The simulation performance of a hardware design tool is not essential as it does
 not have an impact on the resulting implementation. Nevertheless, a slow
 simulator can waste valuable developer time by inducing a long
@@ -825,7 +887,7 @@ The current implementation of SMEIL is not written with performance in mind and
 leaves a lot of performance-related low-hanging fruits unpicked. Indeed, its
 naïve interpreter makes repeated traversals of the SMEIL AST and the interface
 between PySME and \libsme{} relies on the very general and inefficient
-\textsc{libffi} library.
+\texttt{libffi} library.
 % Lastly, Python itself is not cherished for its
 % performance. It is therefore noteworthy that it still exceeds the performance of
 % the VHDL simulator GHDL,

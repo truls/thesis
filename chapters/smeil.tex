@@ -49,7 +49,7 @@ were phrased as:
   code. Therefore, SMEIL should have rich constructs for specifying the
   structure of SME networks.
 \item[Readability.] Ensuring that the language has a readable and accessible
-  representation aids debugging and makes it possible to understand For this
+  representation aids debugging and makes it possible to understand. For this
   reason, SMEIL has a human-readable concrete syntax.
 \item[Composability.] The language should provide unrestricted composability to
   ensure that networks can be subdivided for optimal flexibility.
@@ -58,7 +58,7 @@ were phrased as:
   same thing. As a continuation of the goal to ensure a straight-forward mapping
   of, for example. C\#, the semantics of things which are not directly SME
   related are what you would expect. This principle applies everywhere in the
-  language except for reading to and writing from bus channels. As these are
+  language except for reading to and writing from, bus channels. As these are
   features unique to SME.
   % it is hard to give them a syntax which is convenient,
   % while, at the same time, unrecognizable from features in other languages.
@@ -188,9 +188,9 @@ component libraries for SME. \todo{Did we mention that this was a goal?}
   \alt <instance>
   \alt <generate>
   
-  <param> ::= \{ `[' \{ <expression> \} `]' \} <direction> <ident>
-
   <params> ::= <param> \{ , <param> \}
+
+  <param> ::= \{ `[' \{ <expression> \} `]' \} <direction> <ident>
 
   <direction> ::= `in' (input signal)
   \alt `out' (output signal)
@@ -238,15 +238,16 @@ described in the section referring to Entity instances below.
 
 All well-formed SMEIL networks must contain a {\tt network} declaration which is
 used as the top-level entity containing the exposed interfaces of the
-network. The top-level network is determined as follows: A graph is generated
-from the SMEIL network containing one node per entity and edges between entities
-that instantiate each other. The nodes of the graph are then topologically
-sorted and the head of the sorted list is the top-level entity of the
-network. We also ensure that the graph is acyclic as process instantiation
-cycles would expand indefinitely. Note that even though the connections of a
-network such as AddOne (Seen in \Cref{sec:smeilex}) is cyclic, its
-instantiation graph is not since a single network instantiates the two
-processes.
+network. We chose not to add any explicit annotation for indicating the
+top-level entity since we are automatically able to identify it using the
+following method: A graph is generated from the SMEIL network containing one
+node per entity and edges between entities that instantiate each other. The
+nodes of the graph are then topologically sorted and the head of the sorted list
+is the top-level entity of the network. We also ensure that the graph is acyclic
+as process instantiation cycles would expand indefinitely. Note that even though
+the connections of a network such as AddOne (Seen in \Cref{sec:smeilex}) is
+cyclic, its instantiation graph is not since a single network instantiates the
+two processes.
 
 
 \subsection{Declarations}
@@ -254,7 +255,7 @@ This section describes the declarations that may occur in {\ttfamily network}s
 and the declarational parts of {\ttfamily processe}s. Note that an {\itshape
   <expression>} occurring in declarations must be compile-time
 static. Furthermore, due to limitations of the current compiler implementation,
-they are in some cases limited to integers.
+they are in some cases restricted to integers.
 
 \subsubsection{Variables and constants}
 \begin{grammar}
@@ -265,7 +266,7 @@ they are in some cases limited to integers.
   <const-decl> ::= `const' <ident> `:' <type-name> [ `=' <expression> ] `;'
 \end{grammar}
 
-Constants are used for declaring named constant values, for instance
+\noindent Constants are used for declaring named constant values, for instance
 \begin{lstlisting}[language=smeil]
 const secs_per_hour: uint = 3600;
 \end{lstlisting}
@@ -275,10 +276,10 @@ this, the compiler will emit a warning for constants declared with constrained
 types, such as {\ttfamily u8}.
 
 Variables allow for defining process-local mutable values. A semantic variation
-compared to general-purpose languages is that variables in SMEIL is that the
-state of a variable persists between process runs (clock cycles). In a way, they
-are similar to function-local {\ttfamily static} variables in C whose value
-persists between function calls.
+compared to general-purpose languages is that the state of variables in SMEIL
+persists between process runs (clock cycles). In a way, they are similar to
+function-local {\ttfamily static} variables in C whose value persists between
+function calls.
 
 In addition to a type, variables may also take a specified {\ttfamily range} of
 values. For example, the following declarations
@@ -299,10 +300,10 @@ value of the variable.
 
 The {\ttfamily range} option was primarily added as a way to provide an
 intuitive way of specifying the expected range of a variable. However, a further
-use is described in \Cref{sec:typing}. Currently, the given range is only used to
-calculate the number of bits required to hold the value. Only the range given by
-the bit-size is enforced during simulation. This is to more closely mimic the
-resulting hardware implementation.
+use is described in \Cref{sec:typing}. Currently, the given range is only used
+to calculate the number of bits required to hold the value. Only the range given
+by the bit-size is enforced during simulation. This is to more closely emulate
+the resulting hardware implementation.
 
 \subsubsection{Enumerations}
 \begin{grammar}
@@ -372,7 +373,7 @@ image separated into their red, green and blue color channels. It contains three
 individual channels named {\ttfamily r}, {\ttfamily g} and {\ttfamily b} each of
 which is typed as 8-bit unsigned integers. The {\ttfamily exposed} modifier
 signifies that the bus is used for external interactions, either through
-co-simulation (\Cref{sec:cosim}) or through the generated VHDL test bench
+co-simulation (\Cref{sec:cosim}) or through the generated VHDL test-bench
 (\Cref{sec:codegen}).
 
 Exposed buses must be defined within, or in entities directly instantiated from,
@@ -567,7 +568,8 @@ create a new instance of that bus.
 The {\ttfamily generate} declaration adds limited the metaprogramming
 capabilities to SMEIL. Unfortunately, it is not yet supported by the current
 implementation. It is frequently desired to create networks with a parameterized
-structure. For example, ... \todo{Add an example}
+structure. For example, in the implementation that our MD5 example shown in
+\Cref{sec:md5} was derived from, \todo{finish}
 
 The semantics of {\ttfamily generate} statements are simple:
 \begin{smeilcode}
@@ -581,10 +583,14 @@ instance a_inst_1 of a(val: 1);
 instance a_inst_2 of a(val: 2);
 instance a_inst_2 of a(val: 3);
 \end{smeilcode}
-  
-Critics could claim that the naming of this definition, which is inspired by
-VHDL, adds unnecessary bloat to the language. Instead, a {\ttfamily for}-loop
-could be used.  \todo{finish}
+
+We could have used the more common name {\ttfamily for} instead of {\ttfamily
+  generate}. However, the current name was chosen to emphasize that the
+declaration is not a loop executing statements for their side-effects but rather
+a code-generation construct.
+% Critics could claim that the naming of this definition, which is inspired by
+% VHDL, adds unnecessary bloat to the language. Instead, a {\ttfamily for}-loop
+% could be used.  \todo{finish}
 
 \subsubsection{Functions}
 \begin{grammar}
@@ -665,11 +671,11 @@ could be used.  \todo{finish}
   \alt `while' <condition> `{' \{ <statement> \} `}'
   \alt `switch' <expression> \\ `{' <switch-case> \{ <switch-case> \}
   [ `default' `{' <statement> \{ <statement> \} `}' ] `}'
-  \alt `trace' `(' <format-string> \{ `,' <expr> \} )`;'
+  \alt `trace' `(' <format-string> \{ `,' <expression> \} )`;'
   \alt `assert' `(' <condition> [ `,' <string> ] )`;'
   \alt `barrier' `;'
   \alt `break' `;'
-  \alt `return' [ <expr> ] `;'
+  \alt `return' [ <expression> ] `;'
 
   <switch-case> ::= `case' <expression> \{ <statement> \}
 
@@ -693,7 +699,7 @@ assigned. A common trait of HDLs is that they make a syntactic distinction
 between the two. VHDL, for example, uses \texttt{:=} and \texttt{<=} for
 variables and signals respectively. In the design of SMEIL we concluded that
 there was no need for making this distinction: The compiler is always able to
-distinguish which kind of object is being assigned to based on the type that it
+distinguish which kind of object is being assigned to, based on the type that it
 was declared as.
 
 \paragraph{Loops.} \texttt{for}-loops have, compared to C, a slightly more
@@ -780,10 +786,11 @@ representing them in VHDL.
 \end{grammar}
 
 The syntax of expressions the syntax and precedence rules (\Cref{tab:ops}) are
-similar to those of C-like languages. Note that there is no notion of truthness
-(see \Cref{sec:typesys}) and logical operators (e.g. \texttt{\&\&}) therefore only
-accept boolean values. Relational operators (e.g. \texttt{<=}) returns a boolean
-value as there result. \todo{do we need more?}
+similar to those of C-like languages. Note that there is no implicit truthness
+of non-boolean operators (see \Cref{sec:typesys}). Thus, logical operators
+(e.g. \texttt{\&\&}) only accept boolean values and an expression such as
+\texttt{4 \&\& 3} is therefore invalid. Relational operators (e.g. \texttt{<=})
+returns a boolean value as their result.
 
 
 \begin{table}%[H]
@@ -917,11 +924,12 @@ possible. There is no implicit type coercion except between signed and unsigned
 integers.
 % \todo{Describe what SMEIL would look like as dynamically typed
 %   language}
-Consequently, there is no notion of truthness and only expressions of
-boolean type can be used in conditionals. These restrictions are helpful for
-making sure that SMEIL is simple to transform to a wide variety of target
-languages; it is easy to transform a statically typed language to one which is
-dynamically typed, but not the other way around.
+Consequently, there is no implicit notion of truthness (i.e., \texttt{if (1) \{}
+results in a type error) and only expressions of boolean type can be used in
+conditionals. These restrictions are helpful for making sure that SMEIL is
+simple to transform to a wide variety of target languages; it is easy to
+transform a statically typed language to one which is dynamically typed, but not
+the other way around.
 
 The primary feature which distinguishes the type systems of SMEIL and
 general-purpose languages is the support for bit-precise types. General-purpose
@@ -1111,7 +1119,7 @@ parameters are explicitly declared as being used for either input or output. It
 is not possible to explicitly specify the directionality of a bus declared
 within a process. Such buses are designated as either input or output based on
 their first use. If contradicting bus uses are encountered (e.g. reading from an
-output bus), an error is raised.
+output bus), a compile-time error is raised.
 
 The same mechanism which enforces directionality also checks if variables are
 used. Warnings are emitted for unused variables as these may be an indication of
@@ -1130,8 +1138,7 @@ section, constitutes the public interface of an entity, used for establishing
 communication between two entities.
 % Since variables may only be declared in the
 % declarational part of a process \todo{finish or remove}
-The detailed scoping
-rules for SMEIL are as follows:
+The detailed scoping rules for SMEIL are as follows:
 
 \begin{description}
   \item[Modules.] All top-level declarations (modules and networks) are public and
@@ -1141,9 +1148,9 @@ rules for SMEIL are as follows:
     accessed through their instance.
   \item[\texttt{for}-loops.] The counter variable of \texttt{for}-loop may not
     be declared prior loop entry and leaves the scope when the loop exits.
-  \item[Buses.] Buses  can be
-    accessed through their instances (See \Cref{sec:instance}). References to
-    buses from the process they are declared in 
+  \item[Buses.] Buses can be accessed through their instances (See
+    \Cref{sec:instance}). References to a bus from the process where it is
+    declared references the current bus instance.
 \end{description}
 
 
@@ -1171,7 +1178,7 @@ inner scope shadow declarations made in outer scopes. For example, \todo{finish
       \node[below=0cm of id] (p1) {{\ttfamily id}};
       \node[proc style,right=2.5cm of id] (add) {$+$};
       \node[below=0cm of add] (p2) {{\ttfamily incr\_const}};
-      \draw[-{Latex[scale=1.6]}] (id) edge [bend right=30] node [above] {{\ttfamily plusout}} (add);
+      \draw[-{Latex[scale=1.6]}] (id) edge [bend right=30] node [above] {{\ttfamily addout}} (add);
       \draw[-{Latex[scale=1.6]}] (add) edge [bend right=30] node [below] {{\ttfamily
           idout}}
       (id);
@@ -1201,18 +1208,18 @@ proc id(in inbus)
 
 
 proc incr_const(in inbus, const val)
-  bus plusout {
+  bus addout {
      val: int;
   };
 {
-  plusout.val = inbus.val + val;
+  addout.val = inbus.val + val;
 }
 
 network incr() {
-  instance plusone_inst of
-    plusone(id_inst.idout, val: 10);
+  instance addone_inst of
+    incr_const(id_inst.idout, val: 10);
   instance id_inst of
-    id(plusone_inst.plusout);
+    id(addone_inst.addout);
 }
 \end{smeilcode2}
 \caption{An example program written in SMEIL.}
@@ -1221,12 +1228,12 @@ network incr() {
 
 Before closing this chapter, let us show an example of a small, but complete
 example of an SME network implemented in SMEIL to give a feel of the language
-and show how everything fit together. The \textsc{addone} network,
-illustrated in \Cref{fig:addone} to give a feel of the language and illustrate
-the basic syntax. The network consists of two processes and two buses. One
-process, labeled ``='' simply passes along the value received while the other
-process increments it by a constant value passed as a parameter. The source code
-for the example is shown in \Cref{fig:addone.sme}.
+and show how everything fit together. The \textsc{addone} network, illustrated
+in \Cref{fig:addone} to give a feel of the language and illustrate the basic
+syntax. The network consists of two processes and two buses. One process,
+labeled {\ttfamily incr_const} simply passes along the value received while the
+other process increments it by a constant value passed as a parameter. The
+source code for the example is shown in \Cref{fig:addone.sme}.
 
 Each of the two processes is declared using a {\ttfamily proc}
 block. Immediately following, are the declarations belonging to the
@@ -1238,8 +1245,8 @@ curly-braces in a process contain the statements constituting its procedural
 parts, that is, the actions that are performed when the process is executed
 during a clock cycle. The network {\ttfamily incr} instantiates the two
 processes and connects the output one to the input of the other. Furthermore,
-for the instance {\ttfamily plusone\_inst} the constant {\ttfamily val}
-parameter is also set, making the {\ttfamily incr\_const} process 1add 10 to the
+for the instance {\ttfamily addone\_inst} the constant {\ttfamily val}
+parameter is also set, making the {\ttfamily incr\_const} process add 10 to the
 value it receives every time its run. Declarations may be given in any order,
 allowing the mutually dependent process instantiations in the {\ttfamily incr}
 network.

@@ -3,7 +3,7 @@
 In this section, we present the combined implementation of \libsme{} and
 elaborate on implementation details not mentioned elsewhere.
 
-\section{Methods of interaction}
+\section{Methods of Interaction}
 \label{sec:using}
 SMEIL programs are run using the {\ttfamily libsme} library either through interaction
 with the C API of the library or by using the provided command line utility.
@@ -106,8 +106,8 @@ import a module, we pass along the list of imported entities such that only the
 requested entities are imported. The tree of imported modules is then flattened
 by renaming hierarchical references. This process seek to simplify the
 subsequent phases of the compilation process as module hierarchies do not have
-to be considered. The renamings are tracked an passed on to the following stages
-so that a reverse mapping may be performed later, for example for error
+to be considered. The renamings are tracked and passed on to the following
+stages so that a reverse mapping may be performed later, for example for error
 messages.
 
 % In more detailed terms, the algorithm for performing imports work as
@@ -162,8 +162,9 @@ The type checker makes two passes through the code.
 \end{itemize}
 
 The two pass approach ensures that declarations can be given in any
-order. Requiring declarations to be made ahead-of-use would make the code in
-many of the examples shown throughout this thesis significantly more convoluted.
+order. Requiring declarations to be made ahead-of-use would make the code shown
+in many of the examples shown throughout this thesis become significantly more
+convoluted.
   
 \subsection{Analysis} The analysis phase examines the structure of a network.
 This is used for determining the top-level entity of the network which is needed
@@ -191,7 +192,8 @@ language, the SME simulation could be performed directly on the source and SMEIL
 could be used simply for the code generation part. In this scenario, the trace
 file used for the test bench would simply be passed along with the SMEIL
 intermediate code and used in the generated VHDL test code. However, we
-determined that without a simulator, 
+determined that without a simulator, the benefit provided by SMEIL would be
+reduced significantly.
 
 \subsection{Code generation}
 The final stage, yielding the desired output, is the code generation phase
@@ -276,8 +278,11 @@ algorithm:
     
   \item For every such newly created tree node we create a bus instance for
     every bus declaration in the entity.
-  \item Then, every instance 
+  \item Then, every instance
+  \item When
 \end{enumerate}
+
+For example, in the code shown above, we would instantiate the processes
 
 % \section{Design challenges}
 % The key challenge faced in the design of libsme was that, at any stage in the
@@ -311,10 +316,11 @@ algorithm:
 % pleasant. By using Haskell, we have traded a slightly slower development pace,
 % for significantly less time spent debugging.
 
-\todo{section}
-The language chosen for implementation of SMEIL is Haskell. It would have been
-possible to carry out the implementation in any high-level language, but Haskell
-was chosen in particular because:
+% \todo{section}
+\section{Software-engineering details}
+The language chosen for implementation of \libsme{} is Haskell. It would have
+been possible to carry out the implementation in any general-purpose language,
+but Haskell was chosen in particular because:
 \begin{itemize}
 \item Functional programming languages are well suited for writing
   compiler-related software, due to their support for Algebraic Data Types
@@ -323,18 +329,18 @@ was chosen in particular because:
 \item The type-safety of Haskell trades a slightly slower development pace for a
   significant reduction of time spent debugging.
 \item The type system also significantly aids refactoring, something which
-  proved useful several times while developing this project. When a fundamental
-  data structure is changed in a Haskell program, the type system ensures that 
+  proved useful several times while developing this project. When a data
+  structure is changed in a Haskell program, the type system ensures that
+  compile-time errors are raised for code affected by the change.
   % For
   % example, changing a fundamental data structure in Python can be a daunting
 \end{itemize}
 
-
 \libsme{} comprises just short of 6000 SLOC of Haskell. Additionally, the
 wrapper module for holding the co-simulation state and neatly exposing the
-functions of the C-API is implemented in a module is $\sim 500$ SLOC of C. The
-VHDL parsing and quasiquotation library developed for use with this project
-consists of approximately 5500 SLOC of Haskell.
+functions of the C-API is implemented in a module is approximately 500 SLOC of
+C. The VHDL parsing and quasiquotation library developed for use with this
+project consists of approximately 5500 SLOC of Haskell.
 
 The implementation currently has several rough edges, but its fundamental
 structure is sane and it has been written with future extensions in mind. It

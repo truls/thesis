@@ -6,7 +6,7 @@ order to reproduce the runs shown throughout the thesis. These instructions has
 only been tested on a Fedora 27 machine and uses software versions (except
 stack) from its standard repositories. We expect them to work on any recent
 Linux distribution although we make no guarantees. These instructions are
-superseded by any instructions which may appear online
+superseded by any instructions which may appear online.
 
 
 
@@ -18,7 +18,10 @@ The required dependencies for building and running are listed below
 \item gcc
 \item python3.6
 \item perl
-\item pip3}
+\item pip3
+\item git}
+\item The Python scripts used in the co-simulated examples have dependencies not
+  listed here.
 \end{itemize}
 
 \noindent The individual software components referenced throughout this thesis:
@@ -33,18 +36,48 @@ The required dependencies for building and running are listed below
 \subsection{PySME}
 \begin{enumerate}
 \item Go to PySME directory
-  \item Run {\ttfamily pip3 install --user .}
+  \item Run {\ttfamily pip3 install -{}-{}user .}
 \end{enumerate}
 
 \subsection{libsme}
 \begin{itemize}
-\item Go to the \libsme{} directory
+\item Go to the {\tt libsme} directory
 \item Run {\ttfamily make} (this will take a while)
 \item When {\ttfamily make} completes it has created the \texttt{tools/runsme}
   script. Copy this script somewhere in your \texttt{\$PATH}.
+\item Run {\ttfamily stack install} to install the {\tt smec} executable to your
+  {\tt \$PATH}.
 \end{itemize}
 
 \subsection{almique}
+\begin{itemize}
+\item Go to the {\tt almique} directory.
+\item Run {\ttfamily stack build}
+\end{itemize}
+
+\section{Running the examples}
+\subsection{SMEIL as IL}
+Go to the {\tt almique/examples} directory and run {\tt stack exec almique
+  someops.py}. You should now find a file named {\tt SomeOps.sme} containing the
+generated SMEIL code.
+\enlargethispage{2em}
+\subsection{7-segment}
+Go to the {\tt libsme/examples/pure} directory. Run {\tt smec -i 7seg.sme -s 50}
+
+\subsection{ColorBin}
+Go to the {\tt libsme/examples/python/colorbin} directory. Run {\tt runsme
+  python3 colorbin.py}. The generated VHDL code can be found in the {\tt output}
+directory. The VHDL code can be tested by running {\tt make} in the {\tt output}
+directory and executing the generated {\tt coll_net_tb} file.
+
+\subsection{High-frequency trading chip}
+Go to the {\tt libsme/examples/python/ewma} directory. Run {\tt runsme python3
+  ewma-int.py}. The generated VHDL code can be found in the {\tt output}
+directory. The VHDL code can be tested by running {\tt make} in the {\tt output}
+directory and executing the generated {\tt ewma\_tb} file.
+
+\subsection{MD5 bruteforcer}
+Go to the {\tt libsme/examples/pure} directory. Run {\tt smec -i md5-simple.sme -{}-{}no-warnings -s 50}.
 
 
 %%% Local Variables:

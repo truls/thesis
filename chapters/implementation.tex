@@ -1,29 +1,35 @@
 \chapter{\libsme{} design and implementation}
 
 In this section, we present the combined implementation of \libsme{} and
-elaborate on implementation details not mentioned elsewhere.
+elaborate on implementation details.
 
-\section{Methods of Interaction}
+\section{Methods of interaction}
 \label{sec:using}
 SMEIL programs are run using the {\ttfamily libsme} library either through interaction
 with the C API of the library or by using the provided command line utility.
 
 \begin{description}
-\item[Direct code generation.] A SMEIL program constitutes a complete
-  description by itself provided that only size constrained types are
-  used. Therefore, VHDL code can be generated directly from a SMEIL program
-  without the intermediate simulation step present in the most common
-  workflows. Some advantages are lost when using this mode, as no test bench is
-  created and the generated VHDL code must be manually modified and connected to
-  a clock source before it can be tested using a VHDL simulator.
+\item[Direct code generation.]
+  % A SMEIL program constitutes a complete
+  % description by itself provided that only size constrained types are
+  % used.
+  A SMEIL program that contains only size-constrained types provide all the
+  information that is needed to generate a hardware description. Therefore, VHDL
+  code can be generated directly from a SMEIL program without the intermediate
+  simulation step. Some advantages are lost when using this mode, as no test
+  bench is created and the generated VHDL code must be manually modified and
+  connected to a clock source for driving the simulation before it can be tested
+  using a VHDL simulator.
 \item[Pure SMEIL simulation.] This mode only applies to SMEIL networks which
-  contain their own data generation p rocess (see \Cref{sec:7seg} for an example
-  of such a network). SMEIL used like this is not very useful as it can only
-  produce output through {\ttfamily trace} statements (\Cref{sec:langref}).
+  contain their own data generation process (see \Cref{sec:7seg} and
+  \Cref{sec:md5} for examples of such networks). SMEIL used like this is not
+  very useful as it can only produce an output through {\ttfamily trace}
+  statements (\Cref{sec:langref}).
 \item[Co-simulation of SMEIL.] The most common intended usage scenario for SMEIL
-  is to use it together with an SME library for a general purpose language. The
-  full details of the co-simulation interface of SMEIL were previously given in
-  \Cref{sec:cosim}.
+  is to use it together with an SME library for a general purpose language. This
+  allows the generation of VHDL code, an associated test bench, and a trace
+  file. The full details of the co-simulation interface of SMEIL were previously
+  given in \Cref{sec:cosim}.
 \end{description}
 
 \label{sec:libsmeimpl}
@@ -93,22 +99,22 @@ with the C API of the library or by using the provided command line utility.
 \section{An overview}
 \label{sec:overview}
 In the previous sections, we have described the individual parts of \libsme{}
-without describing its combined data flow. Hence, we devote a section for that
-purpose here. An overview of the \libsme{} library and its interactions is shown
-in \Cref{fig:overview} and the individual steps are described below.
+without describing the integration of its components. Hence, we devote a section
+for that purpose here. An overview of the \libsme{} library and its interactions
+is shown in \Cref{fig:overview} and the individual stages are described below.
 
 \subsection{Parsing and Import Resolution} Regardless of how \libsme{} is
-invoked (see \Cref{sec:using}) the SMEIL source is parsed and the resulting AST
-is passed through the import resolver. Here, the code is scanned for the
-presence of import statements. If any are found, the source files containing the
-imported modules are parsed in a recursive manner. Whenever we recursively
-import a module, we pass along the list of imported entities such that only the
-requested entities are imported. The tree of imported modules is then flattened
-by renaming hierarchical references. This process seek to simplify the
-subsequent phases of the compilation process as module hierarchies do not have
-to be considered. The renamings are tracked and passed on to the following
-stages so that a reverse mapping may be performed later, for example for error
-messages.
+invoked (as described in the previous section) the SMEIL source is parsed and
+the resulting AST is passed through the import resolver. Here, the code is
+scanned for the presence of {\ttfamily import} statements. If any are found, the source
+files containing the imported modules are parsed in a recursive manner. Whenever
+we recursively import a module, we pass along the list of imported entities such
+that only the requested entities are imported. The tree of imported modules is
+then flattened by renaming hierarchical references. This process seeks to
+simplify the subsequent phases of the compilation process as module hierarchies
+do not have to be considered. The renamings are tracked and passed on to the
+following stages so that a reverse mapping may be performed later, for example
+for error messages.
 
 % In more detailed terms, the algorithm for performing imports work as
 % follows:\todo{Merge this paragraph with the previous} A
@@ -132,27 +138,21 @@ messages.
 
 
 \subsection{Type Checking} The code is then passed through the type checker
-which enforce the typing rules described in \Cref{sec:typesys}. A single
-abstract representation of SMEIL is used throughout the compiler. This is
-sometimes inconvenient and code simplifications could be made if an intermediate
-representation was used within the compiler. However, this disadvantage is
-offset by the ability to reconstruct the original source code with the spliced
-types. Furthermore, maintaining an unchanged representation of the original
-source code means that the generated code more closely corresponds to the source
-code.
-
-The type checker makes two passes through the code.
+which enforce the typing rules described in \Cref{sec:typesys}. The type checker
+makes two passes through the code:
 \begin{itemize}
 \item The first pass locates all entity definitions (processes and networks) and
   adds them to the top-level symbol table. For every entity found, the
-  declarations of that entity are added to a local symbol table which is
+  declarations in that entity are added to a local symbol table which is
   associated with the entity.
 \item The second pass performs type checking on all declarations and statements
-  in the entities of the program. During this process, the individual AST-nodes
-  are annotated with their types. \todo{Should there be an example here?} Having
-  such type information available throughout the AST is immensely useful for
-  later passes, such as code generation and simulation since we are able to
-  determine the type of an expression at any time by looking at its AST node.
+  in the previously discovered entities. During this process, the individual
+  AST-nodes are annotated with their types.
+  %\todo{Should there be an example here?}
+  Having such type information available throughout the AST is of significant
+  value for subsequent passes, such as code generation and simulation, since
+  they are able to determine the type of an expression at any time by looking at
+  its AST node.
 %     For example, suppose
 %     expression {\ttfamily 2 + 6} is represented in an AST as
 % \begin{verbatim}
@@ -161,17 +161,25 @@ The type checker makes two passes through the code.
 % \end{verbatim}
 \end{itemize}
 
-The two pass approach ensures that declarations can be given in any
+The two-pass approach ensures that declarations can be given in any
 order. Requiring declarations to be made ahead-of-use would make the code shown
 in many of the examples shown throughout this thesis become significantly more
 convoluted.
-  
+
+A single abstract representation of SMEIL is used throughout the compiler. Code
+simplifications could be made if an intermediate representation of SMEIL was
+used by the internal stages of the compiler. However, introducing such an
+intermediate representation would limit our ability to reconstruct the original
+SMEIL source code following re-typing (\Cref{sec:typing}). Furthermore,
+maintaining an unchanged representation of the original source code means that
+the generated code more closely corresponds to the source code.
+
 \subsection{Analysis} The analysis phase examines the structure of a network.
 This is used for determining the top-level entity of the network which is needed
 both for deriving a runtime representation of the network and for subsequent
 code generation. From here, the AST may take two paths depending on the mode of
 invocation requested by the user. It is either passed on directly to the code
-generator or simulated. If the AST was already retyped by the simulator, it is
+generator, or simulated. If the AST was already retyped by the simulator, it is
 passed directly to the code generator.
 
 \subsection{Simulation}
@@ -179,110 +187,171 @@ Simulation is performed to test a design. During the simulation, the value
 ranges assigned to every variable and bus channel are tracked such that we can
 use them for constraining integer types. Furthermore, the values of
 external-facing buses are logged and used to construct the CSV trace file used
-by the generated VHDL test-bench. \todo{Discuss why we only have external
-  interfaces} The simulator also performs accurate emulation of integer
-overflows. During simulation, if \libsme{} is used for co-simulation, it will
-exchange the values of external-facing buses with another SME network. After
-simulation, the AST may either be passed directly to the code generator or, if
-new types were assigned, returned to the type checker.
+by the generated VHDL test bench.
+%\todo{Discuss why we only have external interfaces}
+The simulator also performs accurate emulation of integer overflows. During
+simulation, if \libsme{} is used for co-simulation with another SME network, it
+will exchange the values of external-facing buses with another SME
+network. After simulation, the AST may either be passed directly to the code
+generator or, if new types were assigned, returned to the type checker.
 
-Very early in the development of this project, we considered if implementing a
-simulator of SMEIL was even needed. After all, if used as an intermediate
-language, the SME simulation could be performed directly on the source and SMEIL
-could be used simply for the code generation part. In this scenario, the trace
-file used for the test bench would simply be passed along with the SMEIL
-intermediate code and used in the generated VHDL test code. However, we
-determined that without a simulator, the benefit provided by SMEIL would be
-reduced significantly.
+In very early phases of this project, we considered if implementing a simulator
+for SMEIL was even needed. After all, if SMEIL is used as an intermediate
+language, the source SME network could be simulated directly leaving SMEIL to be
+used purely for code generation. In this scenario, the trace file used for the
+test bench would simply be passed along with the SMEIL intermediate code and
+used for providing input to the generated VHDL test bench. However, we
+determined that without a simulator, SMEIL would be restricted to this
+particular use case only.
 
 \subsection{Code generation}
+\label{sec:codegen}
 The final stage, yielding the desired output, is the code generation phase
-which, as its name suggests, turns the typed and simulated SMEIL AST into VHDL
-code.
+which, as its name suggests, turns the typed and possibly simulated SMEIL AST
+into VHDL code.
+
+SMEIL compiles to clean and readable VHDL code which is amenable to manual
+modifications. The code may be executed using a VHDL simulator or passed to FPGA
+vendor tools for synthesis and subsequent hardware-implementation (as described
+in \Cref{sec:sme}). The generated code is a cycle-accurate representation of the
+original SMEIL network.
+
+The fundamental structure of the SMEIL code is preserved in the generated VHDL
+code. One VHDL entity is generated per SMEIL entity and the body of an SME
+process is transformed into a VHDL {\tt architecture} containing a single
+sequential process. For each of these processes, we also generate code for
+performing an asynchronous reset of all variables and outgoing
+signals. The naming hierarchy of the original SMEIL is preserved, making it easy
+to identify from where a particular section of the VHDL code was generated. In
+\Cref{sec:colorbin} we show an example of how a SMEIL process is transformed
+into an FPGA entity.
+
+For verifying the generated VHDL code, a test bench is also generated. The
+test bench is a VHDL program which connects to the {\ttfamily exposed} buses of
+the SMEIL program. The CSV-trace file, containing the values recorded during
+simulation, is used by the VHDL test bench to drive inputs and verify outputs.
+
+Alongside the generated code, a {\ttfamily Makefile} is generated for building
+and testing the VHDL code using the GHDL~\cite{ghdl} simulator.
+
+Integer types of SMEIL are represented in VHDL using the types provided by the
+standard {\ttfamily ieee.numeric\_std} package. This package provides functions
+for performing signed and unsigned integer arithmetic with logic-vectors. For
+example, the types {\ttfamily i4} and {\ttfamily u12} are represented as
+{\ttfamily signed (3 downto 0)} and {\ttfamily unsigned (11 downto 0)}
+respectively.
+% Contrary to SMEIL, t, that it can not overflow. As we
+% described in \Cref{sec:typesys} this often leads to an over-estimation of bits
+% required to hold a value.
+
+Arrays require the creation of a new {\ttfamily type} in VHDL. A {\ttfamily
+  type} declaring a 10-element array of 5-bit signed integers ({\ttfamily
+  [10]i5} in SMEIL) is represented in VHDL as
+\begin{lstlisting}[language=vhdl]
+type \[10]i5\ is array (0 to 9) of unsigned (4 downto 0);
+\end{lstlisting}
+These type declarations are stored in a separate package, {\ttfamily sme\_types.vhdl},
+which is shared between all entities of the design to avoid cluttering the
+generated code with duplicated declarations. SMEIL booleans are represented
+using the VHDL type {\ttfamily boolean}. As an alternative to this, a single {\ttfamily
+  std\_logic} type is commonly used. This type represents a wire in the hardware
+and is, therefore, able to have other states than just true or false. This may
+be useful in some circumstances.
+
+The actual code is generated using the {\ttfamily language-vhdl-quote}
+library~\cite{language-vhdl-quote} which provides
+quasiquoters~\cite{mainland2007s} for building VHDL ASTs using the concrete VHDL
+syntax. The major advantage of this approach is that it minimizes the chance of
+generating syntactically invalid VHDL since syntax errors are caught during
+compilation of \libsme{}. Furthermore, a complete VHDL AST is constructed
+containing the contents of each generated VHDL file. This AST is then
+pretty-printed, yielding consistently formatted code which is difficult to
+achieve using more common techniques based on string templates.
+
 \subsection{Reconstruction} If observation based typing was enabled, the
 simulator will have annotated the SMEIL AST with types based on the observed
 values. By reconstructing a structure resembling the original AST, reusing the
 stages of the compiler is simplified. Furthermore, the results of the retyping
 are shown to the user using nicely formatted concrete SMEIL syntax.
 
-\section{Runtime Representation of SMEIL}
-Since entities in SMEIL can be instantiated, there is not a one-to-one
-correspondence between the number of entity and bus declarations and the number
-of objects in the runtime representation. For example, the following network
-\begin{smeilcode2}
-proc A ()
-    instance b1 of B();
-    instance b2 of B();
-{}
+% \section{Runtime Representation of SMEIL}
+% Since entities in SMEIL can be instantiated, there is not a one-to-one
+% correspondence between the number of entity and bus declarations and the number
+% of objects in the runtime representation. For example, the following network
+% \begin{smeilcode2}
+% proc A ()
+%     instance b1 of B();
+%     instance b2 of B();
+% {}
 
-proc B ()
-    instance c1 of C();
-    instance c2 of C();
-    instance c3 of C();
-{}
+% proc B ()
+%     instance c1 of C();
+%     instance c2 of C();
+%     instance c3 of C();
+% {}
 
-proc C ()
-{}
+% proc C ()
+% {}
 
-network N () {
-    instance _ of A();
-}
-\end{smeilcode2}
-forming a tree of instances, will at runtime contain 6 instances of the {\tt C}
-process even though only 3 {\tt instance} declaration for instantiating it are
-present in the code. Therefore, the simple solution of scanning the code for
-{\tt instance} statements and creating one process instance per occurrence will
-not work.
+% network N () {
+%     instance _ of A();
+% }
+% \end{smeilcode2}
+% forming a tree of instances, will at runtime contain 6 instances of the {\tt C}
+% process even though only 3 {\tt instance} declaration for instantiating it are
+% present in the code. Therefore, the simple solution of scanning the code for
+% {\tt instance} statements and creating one process instance per occurrence will
+% not work.
 
-% Here, we describe the algorithm used
-% to go from program declaration to runtime objects. \todo{finish}
+% % Here, we describe the algorithm used
+% % to go from program declaration to runtime objects. \todo{finish}
 
-% Like the handling of import statements, the algorithm for establishing a runtime
-% representation of SMEIL 
+% % Like the handling of import statements, the algorithm for establishing a runtime
+% % representation of SMEIL 
 
-% \todo{Describe the recursive algorithm used for creating a runtime
-%   representation of an SMEIL}
+% % \todo{Describe the recursive algorithm used for creating a runtime
+% %   representation of an SMEIL}
 
-% The key insight of this algorithm is that a network, connecting two processes,
-% for example
+% % The key insight of this algorithm is that a network, connecting two processes,
+% % for example
 
-Another problem to handle is seen in the following network block
-\begin{smeilcode}
-  network n() {
-    instance i1 of p1(p2.b);
-    instance i2 of p2(p1.b);
-  }
-\end{smeilcode}
-which instantiates two processes i1 and i2 and creates a connection between
-them. What makes this hard, is that even though the connection between the two
-processes is established in the network {\tt n}, the buses which forms the
-connections are defined within {\tt p1} and {\tt p2} processes. Therefore, we
-need to create the {\tt i1} and {\tt i2} instances in order to know which buses
-to connect.
+% Another problem to handle is seen in the following network block
+% \begin{smeilcode}
+%   network n() {
+%     instance i1 of p1(p2.b);
+%     instance i2 of p2(p1.b);
+%   }
+% \end{smeilcode}
+% which instantiates two processes i1 and i2 and creates a connection between
+% them. What makes this hard, is that even though the connection between the two
+% processes is established in the network {\tt n}, the buses which forms the
+% connections are defined within {\tt p1} and {\tt p2} processes. Therefore, we
+% need to create the {\tt i1} and {\tt i2} instances in order to know which buses
+% to connect.
 
-% Another thing to note is that networks have no effect on the runtime
-% representation of an SMEIL program.
+% % Another thing to note is that networks have no effect on the runtime
+% % representation of an SMEIL program.
 
-The input to the process is an SMEIL program and the result is a graph
-containing process instances with links to the buses that connects
-them.
+% The input to the process is an SMEIL program and the result is a graph
+% containing process instances with links to the buses that connects
+% them.
 
 
-This runtime representation is established through the following
-algorithm:
-\begin{enumerate}
-\item For every {\tt instance} declaration encountered referencing a process we
-  create a runtime process containing a symbol table. We fill this symbol table
-  with all declarations {\itshape except} instance found in the declarational
-  part of the process.
+% This runtime representation is established through the following
+% algorithm:
+% \begin{enumerate}
+% \item For every {\tt instance} declaration encountered referencing a process we
+%   create a runtime process containing a symbol table. We fill this symbol table
+%   with all declarations {\itshape except} instance found in the declarational
+%   part of the process.
     
-  \item For every such newly created tree node we create a bus instance for
-    every bus declaration in the entity.
-  \item Then, every instance
-  \item When
-\end{enumerate}
+%   \item For every such newly created tree node we create a bus instance for
+%     every bus declaration in the entity.
+%   \item Then, every instance
+%   \item When
+% \end{enumerate}
 
-For example, in the code shown above, we would instantiate the processes
+% For example, in the code shown above, we would instantiate the processes
 
 % \section{Design challenges}
 % The key challenge faced in the design of libsme was that, at any stage in the
@@ -317,7 +386,7 @@ For example, in the code shown above, we would instantiate the processes
 % for significantly less time spent debugging.
 
 % \todo{section}
-\section{Software-engineering details}
+\section{Software-engineering considerations}
 The language chosen for implementation of \libsme{} is Haskell. It would have
 been possible to carry out the implementation in any general-purpose language,
 but Haskell was chosen in particular because:

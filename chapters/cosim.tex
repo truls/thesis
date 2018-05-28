@@ -1,44 +1,50 @@
 \chapter{Co-simulation}
 \label{sec:cosim}
 
-Without a method for interacting with other languages, SMEIL would not be very
-useful. The simplicity of SMEIL can be attributed to its narrow scope: it is
-only intended as a hardware modeling language and not for writing
-test-benches. For this, the full power of a general-purpose language is needed
-as the test-code can be written without hardware-related considerations and
-using all available libraries. For example, a test-bench may read an image from
-disk or visualize the results of a simulation. Extending SMEIL to be able to
-perform such tasks is a substantial undertaking that does not further its
-{\itshape raison d'être} as a hardware-modeling
+% Without a method for providing external input to SME networks  would not be very
+% useful.
+The usefulness of SMEIL would be limited without a way to provide external
+interactions with SME networks written in SMEIL. The simplicity of SMEIL can be
+attributed to its narrow scope: it is only intended for writing hardware models
+and not for writing test benches. For this, the full power of a general-purpose
+language is needed as the test-code can be written without hardware-related
+considerations and using all available libraries. For example, a test bench may
+read an image from disk or visualize the results of a simulation. Extending
+SMEIL to be able to perform such tasks is a substantial undertaking that does
+not further its primary purpose as a hardware-modeling
 language. Co-simulation~\cite{schloegl2015towards} is the process of two
 separate entities (in this case two SME networks) which communicates through
-plumbing transparently established by the SME libraries.
+channels transparently established by the SME libraries.
 
-\section{The API}
+\section{Co-simulation with SMEIL}
 For performing co-simulation with SMEIL, we expose a C API from \libsme{}. The
-API is intended to be used by SME implementations for general-purpose languages.
+API is intended to be implemented by SME libraries for general-purpose
+languages.
 
 There are three aspects to the API: Firstly it provides a way to enumerate the
-buses exported from a SMEIL model. Secondly, it provides calls for reading to-
+buses exposed from a SMEIL model. Secondly, it provides calls for reading to-
 and writing from bus channels and driving forward the simulation. Finally, it
 offers calls for ordering the production of output, such as VHDL code
 generation.
 
 A noticeable feature of the API is its support for arbitrary-length
-integers. This means that the bit-width of buses used in simulated designs are
-not restricted by the register-width of the underlying CPU. Support for
-simulating designs using integers larger than the register-width of the host CPU
-is desired since these may be used in hardware models.
+integers. This means that the bit-width of buses used by simulated models are
+not restricted by the register-width of the CPU of the underlying host. A
+hardware model may use values of any bit-width and the model should, therefore,
+not inherit the limitations of the platform that it is simulated on.
 
+% Support for
+% simulating designs using integers larger than the register-width of the host CPU
+% is desired since it allows them to be used in hardware models. \todo{fix}
 
-When this API is used \libsme{} operates as a ``puppet'', being controlled by
-the calling program (the ``puppeteer''). Only buses declared with the
-\texttt{exposed} (\Cref{sec:langref}) modifier in SMEIL are accessible through
-the \libsme{} API. The calling library drives forward the simulation by calling
-a function for ticking the clock and reading writing from/to the exposed buses
-of a SMEIL program. In the following section, we give a detailed introduction to
-the API.  For brevity, we refer to the implementing SME library (not PySME in
-particular) as the ``client'' in the following.
+When the co-simulation API is used \libsme{} operates as a ``puppet'', being
+controlled by the calling program (the ``puppeteer''). Only buses declared with
+the \texttt{exposed} (\Cref{sec:langref}) modifier in SMEIL are accessible
+through the \libsme{} API. The calling library drives forward the simulation by
+calling a function for ticking the clock and for reading and writing from/to the
+exposed buses of a SMEIL program. In the following section, we give a detailed
+introduction to the API.  For brevity, we refer to an SME library implementing
+the API as the ``client'' in the following.
 
 % \begin{figure}
 %   \resizebox{.7\linewidth}{!}{
@@ -60,80 +66,15 @@ particular) as the ``client'' in the following.
 % \end{figure}
 
 
-This approach is conceptually similar to the Verilog Procedural Interface
-(VPI)~\cite{dawson1996verilog} which is used for interfacing with Verilog and
-VHDL simulators. However, a big advantage of the SMEIL approach is that SME is
-used on both sides of the co-simulation. Hence, both the functional and
-verification parts of the network act as a single unified entity. Thus, the
+The approach presented here is conceptually similar to the Verilog Procedural
+Interface (VPI)~\cite{dawson1996verilog} which is used for interfacing with
+Verilog and VHDL simulators. However, a big advantage of the SMEIL approach is
+that SME is used on both sides of the co-simulation. Hence, both the functional
+and verification parts of the network act as a single unified entity. Thus, the
 programmer does not need to consider integrating different abstract interfaces.
 
 
-\begin{figure}
-  \centerfloat
-  \begin{subfigure}[t]{0.40\paperwidth}
-\begin{lstlisting}[language=smeil]
-proc addone(in inbus, const val)
-    exposed bus addout {
-       val: i32;
-    };
-{
-    addout.val = inbus.val + val;
-}
-
-network addone_net() {
-    exposed bus idout {
-        valid: bool;
-        val: i32;
-    };
-
-    instance addone_inst of
-        addone(idout, 1);
-}
-\end{lstlisting}
-    
-\subcaption{The SMEIL code in \texttt{addone.sme}.}
-  \end{subfigure}
-  \begin{subfigure}[t]{0.40\paperwidth}
-    \begin{lstlisting}[language=python]
-from sme import *
-
-class Id(SimulationProcess):
-  def setup(self, ins, outs, result):
-    self.map_outs(outs, "out")
-    self.map_ins(ins, "inp")
-
-  def run(self):
-    result[0] = self.out["val"]
-    self.out["val"] = self.inp["val"]
-
-@extends("addone.sme", ["-t trace.csv"])
-class AddOne(Network):
-  def wire(self, result):
-    plus_out = ExternalBus("plusone_inst.addout")
-    id_out = ExternalBus("idout")
-    p = Id("Id", [plus_out],
-      [id_out], result)
-    self.add(plus_out)
-    self.add(id_out)
-    self.add(p)
-
-if __name__ == "__main__":
-  sme = SME()
-  result = [0]
-  sme.network = AddOne("", "AddOne",
-             result)
-  sme.network.clock(100)
-  print("Final result was ", result[0])
-  \end{lstlisting}
-  \subcaption{The corresponding Python code.}
-  \end{subfigure}
-
-  \caption{Example code showing interaction between SMEIL (left) and PySME
-    (right).}
-\label{fig:smeilpy}
-\end{figure}
-
-\section{API Reference}
+\section{API reference}
 This section documents the public API of the co-simulation interface of
 \libsme{}. Towards the end of the section, we give a short overview of how the
 API is used.
@@ -187,50 +128,50 @@ data with \libsme{}.
 \item[\texttt{SmeCtx* sme\_init()}]\hfill\\
    Initializes and returns the SME library context.
  \item[\texttt{bool sme_open_file(SmeCtx* ctx, const char* file, int argv,
-     char** argc);}]\hfill Loads an SMEIL file, while applying the supplied
+     char** argc)}]\hfill Loads an SMEIL file, while applying the supplied
    arguments to \libsme{}.
-   \item[\texttt{bool sme_has_failed(SmeCtx* ctx);}]\hfill\\
+   \item[\texttt{bool sme_has_failed(SmeCtx* ctx)}]\hfill\\
      Returns true if an operation within the libsme library failed.
- \item[\texttt{char* sme_get_error_buffer(SmeCtx* ctx);}]\hfill\\
+ \item[\texttt{char* sme_get_error_buffer(SmeCtx* ctx)}]\hfill\\
    Returns a string containing the error message emitted by libsme. The memory
    pointed to may not be freed except by calling the \texttt{sme_free} function.
- \item[\texttt{void sme_free(SmeCtx* ctx);}]\hfill\\
+ \item[\texttt{void sme_free(SmeCtx* ctx)}]\hfill\\
    Frees the SME library context and related resources.
- \item[\texttt{bool sme_tick(SmeCtx* ctx);}]\hfill\\
+ \item[\texttt{bool sme_tick(SmeCtx* ctx)}]\hfill\\
    Ticks the clock of an SME simulation synchronously. When this function
    returns, all processes defined within \libsme{} will have run and written to
    their buses.
- \item[\texttt{bool sme_finalize(SmeCtx* ctx);}]\hfill\\
+ \item[\texttt{bool sme_finalize(SmeCtx* ctx)}]\hfill\\
    Finalizes a simulation and dumps the recorded trace file (if any) to the file
    system. This function should always be called following the final call to
    \texttt{sme_tick}.
- \item[\texttt{bool sme_propagate(SmeCtx* ctx);}]\hfill\\
+ \item[\texttt{bool sme_propagate(SmeCtx* ctx)}]\hfill\\
    Propagates the values of both internal and external facing buses defined in
    \libsme{}. Run this function before the clock is advanced (by calling
    \texttt{sme_tick}) in the simulation loop and it should be run together with
-   any bus propagation that need to be performed by the calling code. When this
+   any bus propagation that needs to be performed by the calling code. When this
    function returns, the values of all buses defined within \libsme{} have been
    propagated.
- \item[\texttt{void sme_integer_resize(SMEInt* num, int len);}]\hfill\\
+ \item[\texttt{void sme_integer_resize(SMEInt* num, int len)}]\hfill\\
    When manipulating values of type {\tt SMEInt} (arbitrary-size integers) the
    \texttt{sme_resize_integer} function will make sure that the memory pointed
-   to by Value.value is large enough to hold the number that you intend to
+   to by {\tt Value.value} is large enough to hold the number that you intend to
    store. The function takes a pointer to the {\tt SMEInt} structure and a
-   parameter len which is the size of the number to be stored in base-256. This
-   function must be called before every direct manipulation of {\tt
-     SMEInt.num}. For a safer interface, see \texttt{sme_integer_store}.
- \item[\texttt{void sme_integer_store(SMEInt* num, int len, const char val[]);}]\hfill\\
+   parameter len which is the number of bytes needed to store the number as
+   base-256. This function must be called before every direct manipulation of
+   {\tt SMEInt.num}. For a safer interface, see \texttt{sme_integer_store}.
+ \item[\texttt{void sme_integer_store(SMEInt* num, int len, const char val[])}]\hfill\\
    Stores the base-256 representation of an integer in an \texttt{SMEInt}.
- \item[\texttt{void sme_set_sign(SMEInt* num, int sign);}]\hfill\\
+ \item[\texttt{void sme_set_sign(SMEInt* num, int sign)}]\hfill\\
    Sets the sign of an \texttt{SMEInt}. Possible values for \texttt{sign} are 0
    meaning the number is positive and 1 for a negative value.
- \item[\texttt{BusMap* sme_get_busmap(SmeCtx* ctx);}]\hfill\\
+ \item[\texttt{BusMap* sme_get_busmap(SmeCtx* ctx)}]\hfill\\
    Returns a pointer to a {\tt BusMap} structure containing the exposed buses of
    the SME network. This function is intended to be used by implementers of {\tt
      libsme} to generate internal representations of their SME buses. It is the
-   caller responsibility to free the memory returned by the function by calling
+   callers responsibility to free the memory returned by the function by calling
    \texttt{sme_free_busmap}.
-\item[\texttt{void sme_free_busmap(BusMap* bm);}]\hfill\\
+\item[\texttt{void sme_free_busmap(BusMap* bm)}]\hfill\\
    Frees a BusMap structure allocated by \texttt{sme_get_busmap}.
 \end{description}
 
@@ -238,12 +179,12 @@ data with \libsme{}.
 The initial interaction with the API happens through a call to the {\tt
   sme_init} function. The {\tt SmeCtx} pointer returned is an opaque reference
 to the SME library context which must be included in every future interaction
-with the library. The next step is to load an SMEIL file by calling {\tt
+with the library. The next step is to load a SMEIL program by calling {\tt
   sme_open_file}. Then, the implementing client must retrieve a {\it busmap}
 from \libsme{} in order to learn how to access the {\tt exposed} buses of the
 SMEIL program. This is done by calling the {\tt sme_get_busmap} function. As
 seen, it returns a pointer to a {\tt BusMap} struct which then again points to
-an array of {\tt ChannelRef} structs. Each of these contain an individual bus
+an array of {\tt ChannelRef} structs. Each of these contains an individual bus
 channel. In addition to the type of the channel, a {\tt ChannelRef} also
 contains two pointers to {\tt Value} structs. One for the reading- and
 writing-end of the channel respectively. Reading to- and writing from the bus
@@ -261,12 +202,12 @@ check if the previous operation resulted in an error. If the function returns
 buffer containing a human-readable description of the error which occurred.
 
 In the main simulation loop of the implementing client library the following
-calls to the API is usually made: In the bus propagation phase, the client must
-propagate its own buses together with the buses and then call the {\tt
-  sme_propagate} function to propagate the buses defined the SMEIL
-program. Following bus propagation, the client library must run its own
-processes and the presses defined in the SMEIL program. This is done by calling
-the {\tt sme_tick} function.
+calls to the API are usually made: In the bus propagation phase, the client must
+propagate its own buses and then call the {\tt sme_propagate} function to
+propagate the buses defined the SMEIL program. Following bus propagation, the
+client library must run its own processes and the processes defined in the SMEIL
+program. The processes defined in the SMEIL program are run by calling the {\tt
+  sme_tick} function.
 
 When the simulation is complete and the desired number of cycles has been
 performed, before freeing memory, a final call to {\tt sme_finalize} must be
@@ -277,35 +218,102 @@ it can be implemented by any language providing an adequate Foreign Function
 Interface (FFI) for C APIs.
 
 \section{Co-simulation using PySME}
+
+\begin{figure}
+  \centerfloat
+  \begin{subfigure}[t]{0.40\paperwidth}
+\begin{lstlisting}[language=smeil]
+proc addone(in inbus, const val)
+    exposed bus addout {
+       val: i32;
+    };
+{
+    addout.val = inbus.val + val;
+}
+
+network addone_net() {
+    exposed bus idout {
+        valid: bool;
+        val: i32;
+    };
+
+    instance addone_inst of
+        addone(idout, 1);
+}
+\end{lstlisting}
+    
+\subcaption{The SMEIL code in \texttt{addone.sme}.}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.40\paperwidth}
+    \begin{lstlisting}[language=python]
+from sme import *
+
+class Id(SimulationProcess):
+  def setup(self, ins, outs, result):
+    self.map_outs(outs, "out")
+    self.map_ins(ins, "inp")
+
+  def run(self):
+    result[0] = self.out["val"]
+    self.out["val"] = self.inp["val"]
+
+@extends("addone.sme", ["-t", "trace.csv"])
+class AddOne(Network):
+  def wire(self, result):
+    plus_out = ExternalBus("addone_inst.addout")
+    id_out = ExternalBus("idout")
+    p = Id("Id", [plus_out],
+      [id_out], result)
+    self.add(plus_out)
+    self.add(id_out)
+    self.add(p)
+
+if __name__ == "__main__":
+  sme = SME()
+  result = [0]
+  sme.network = AddOne("", "AddOne",
+             result)
+  sme.network.clock(100)
+  print("Final result was ", result[0])
+  \end{lstlisting}
+  \subcaption{The corresponding Python code.}
+  \end{subfigure}
+
+  \caption{Example code showing the an interaction between SMEIL (left) and PySME
+    (right).}
+\label{fig:smeilpy}
+\end{figure}
+
 In order to show a client implementation of the API described above, we have
 extended the PySME library~\cite{pysme} with support for co-simulation enabling
 seamless interaction between SME networks written in Python and SMEIL. In
-practice, extending the PySME library was quite straight-forward and required
-less than a day of implementation work by a person with expert knowledge of both
+practice, extending the PySME library was straightforward and required less than
+a day of implementation work by a person with expert knowledge of both
 code-bases. We expect that a similar effort is required to extend other SME
 implementations (such as C\# SME and C++ SME).
 
-As an example, we revisit our trivial AddOne example introduced in
-\Cref{sec:smeilex}, this time implementing one half of it in Python seen in
+As an example, we revisit the {\sc addone} example introduced in \Cref{sec:smeilex},
+this time implementing one half of it in Python as seen in
 \Cref{fig:smeilpy}. The \texttt{@extends} decorator is all that is needed to
 make the buses exposed from the SMEIL network available for the Python
 program. Behind the scenes, \libsme{} is loaded and the \texttt{addone.sme} file
 is parsed, typechecked and the \libsme{} SMEIL simulator is initialized. We gave
 a detailed description of this interaction in the previous section. A
-SMEIL-defined bus is referenced from PySME by creating an \texttt{ExternalBus},
-providing the name of a bus as its parameter. The semantics of an {\ttfamily
-  ExternalBus} is identical to those of a bus defined within Python. Any SMEIL
-type except strings and arrays may be passed along a bus. Strings play a very
-limited role in SMEIL and are therefore unlikely to be supported. Arrays, on the
-other hand, are desirable to include in future extensions. Integers are encoded
-in base-256 as a sequence of bytes, allowing arbitrarily-sized integers to be
-used between co-simulated entities.
+SMEIL-defined bus is referenced from PySME by instantiating an
+\texttt{ExternalBus}, providing the name of a bus defined in the SMEIL program
+as its parameter. The semantics of an {\ttfamily ExternalBus} is identical to
+those of a bus defined within Python. Any SMEIL type except strings and arrays
+may be passed along a bus. Strings play a very limited role in SMEIL and are
+therefore unlikely to be supported. Arrays, on the other hand, are desirable to
+include in future extensions. Integers are encoded in base-256 as a sequence of
+bytes, allowing arbitrarily-sized integers to be used between co-simulated
+entities.
 
 When this program is run, the PySME library calls the \libsme{} library for
 every cycle to stepwise progress the simulation. During the simulation \libsme{}
 may, if asked to do so, record a trace of the communication taking place over
 the buses to a file. This trace file is then later used as the data source for
-the VHDL test-bench which is used to verify the generated VHDL code.
+the VHDL test bench which is used to verify the generated VHDL code.
 
 This is a highly flexible model as co-simulation is enabled with minimal
 intrusion on existing PySME code. For example, should \libsme{} be extended with
@@ -315,7 +323,14 @@ even be replaced entirely, as long as the current API is
 maintained. Furthermore, it also facilitates an incremental design strategy,
 where a Python prototype can gradually be rewritten in SMEIL.
 
-We show more examples of using co-simulation to test SMEIL networks in
+Notice in the PySME code of \Cref{fig:smeilpy} that the {\tt addout} bus is
+referenced through its instance name {\tt addone_inst.addout} and the {\tt
+  idout} bus is referenced directly by its name. This is because the latter bus
+is declared directly inside the top-level entity while the former is declared
+within the {\tt addone} process which is instantiated as {\tt addone_inst}.
+This naming scheme is used to ensure that exposed buses have unique names.
+
+We show more examples of using co-simulation for testing SMEIL networks in
 \Cref{eval}.
 
 % \section{Runtime representation}
@@ -323,20 +338,24 @@ We show more examples of using co-simulation to test SMEIL networks in
 % suitable runtime representation. 
 
 
-\section{Typing Networks Through Simulation}
+\section{Typing networks through simulation}
 \label{sec:typing}
 % \todo{Why do we only have this restricted notion of dynamic typing. Why no
-%   completely variable types?}
-In order to translate SMEIL to a hardware description, we require that all types
-in the program are constrained to a specific bit-width. However, it is often
-hard to know the optimal bit-width of a value in advance. In particular, this
-applies to internal variables whose values are derived from external inputs. To
-address this, \libsme{} provides a method for re-typing a SMEIL program based on
-values observed during simulation.
+% completely variable types?}
+As described in \Cref{sec:typesys} SMEIL supports integers of both constrained
+and unconstrained bit-widths.  In order to translate SMEIL to a hardware
+description, we require that all types in the program are constrained to a
+specific bit-width.  In a hardware description, we need to statically specify
+the number of bits required by each value and therefore, arbitrary-width
+integers are not representable.  However, it is often difficult to decide the
+optimal bit-width of a value in advance. In particular, this applies to internal
+variables whose values are derived from external inputs. To address this,
+\libsme{} provides a method for re-typing a SMEIL program based on values
+observed during simulation.
 
 When this feature is enabled, the maximum absolute value assigned to a variable
-is stored alongside its current value. Whenever the value is assigned, the new
-value is compared against the current maximum which is then updated as needed.
+is stored alongside its current value. Whenever the variable is assigned, the
+new value is compared to the current maximum which is then updated as needed.
 
 % As described in \Cref{sec:typesys}, the only unsized types which exists in SMEIL
 % are signed and unsigned integers. This raise the question: Why not have an
@@ -347,17 +366,23 @@ value is compared against the current maximum which is then updated as needed.
 %\todo{Describe implementation details}
 %\todo{We promise to mention ranges earlier}
 When the simulation is concluded, the observed value ranges are converted to
-sufficiently large SMEIL types. The types and observed ranges are then spliced
-into the SMEIL AST and the re-typed program is then passed through the type
-checker. This ensures that constraints originating from fixed-size types in the
-original program are not violated. This process is illustrated in
-\Cref{fig:simtyping} which shows how observationally derived types are spliced
-into an existing program. \Cref{fig:violated} shows the violation of an existing
-constraint in the program. Since the value {\ttfamily c} has the fixed-sized
-type {\ttfamily i10}, the program will no longer be valid if {\ttfamily b.chan}
-observes values that are 15-bit long. A configuration flag {\ttfamily
-  -{}-no-strict-type-bounds} overrides this behavior by considering all types as
-unbounded (i.e., {\ttfamily i10} is considered identical to {\ttfamily int}).
+SMEIL types large enough to hold the range.  For example, in the program shown
+in \Cref{fig:non-violated}, we observed that the bus channel {\tt b.chan} was
+assigned values between 0 and 29 during simulation. Therefore, the bus channel
+is assigned the type {\tt i6} as we need 6-bits to hold the value 29 in a signed
+integer.
+
+The types and observed ranges are spliced into the SMEIL AST and the re-typed
+program is then passed through the type checker. This ensures that constraints
+originating from fixed-size types in the original program are not violated. This
+process is illustrated in \Cref{fig:simtyping} which shows how observationally
+derived types are spliced into an existing program. \Cref{fig:violated} shows
+the violation of an existing constraint in the program. Since the value
+{\ttfamily c} has the fixed-sized type {\ttfamily i10}, the program will no
+longer be valid if {\ttfamily b.chan} observes values that are 16-bit long. A
+configuration flag {\ttfamily -{}-no-strict-type-bounds} overrides this behavior
+by considering all types as unconstrained (i.e., {\ttfamily i10} is considered
+identical to {\ttfamily int}).
 
 
 \begin{widefigure}
@@ -382,7 +407,7 @@ proc A ()
     \begin{lstlisting}[language=smeil]
 proc A ()
  bus b {
-  chan: ?{\bfseries\underline{i5 range 0 to 29}}?;
+  chan: ?{\bfseries\underline{i6 range 0 to 29}}?;
  };
  var c: i10;
 {
@@ -397,7 +422,7 @@ proc A ()
     \begin{lstlisting}[language=smeil]
 proc A ()
  bus b {
-  chan: ?{\bfseries\underline{i15 range 0 to 30717}}?;
+  chan: ?{\bfseries\underline{i16 range 0 to 30717}}?;
  };
  var c: i10;
 {
@@ -413,43 +438,43 @@ proc A ()
   \label{fig:simtyping}
 \end{widefigure}
 
-As seen, it is possible to mix types with bounded and unbounded bit-widths, This
-is useful as we often know the range of external buses. Determining the
-ranges of values that derives from those buses are not always as
-easy. Therefore, we can let all internal buses and variables of a program be
-typed based on observed values while fixing external buses to a specific
-size. The type system of SMEIL will then enforce that we do not assign a larger
-dynamically determined value to a smaller fixed external value.
+As seen, it is possible to mix types with constrained and unconstrained
+bit-widths, This is useful as we often know the possible range of external
+buses. Determining the ranges of values that derive from those buses are not
+always as easy. Therefore, we can let all internal buses and variables of a
+program be typed based on observed values while fixing external buses to a
+specific size. The type system of SMEIL will then enforce that we do not assign
+a larger dynamically determined value to a smaller fixed external value.
 % Facilities for
 % bit-precise typing also exists in other current SME implementations, but since
 % the types aren't built into the language, they become more difficult to enforce
 
 This feature can only be used safely if the following conditions
 apply: \begin{inparaenum}[1)] \item All values deriving from input stimuli must
-  increase monotonically with the value of the input and \item the testing code
-  must ensure that the whole possible range of input stimuli is exhausted by
-  test-benches.
+  increase monotonically in relation to the value of the input and \item the
+  testing code must ensure that the whole possible range of input stimuli is
+  exhausted by test benches.
 \end{inparaenum}
 
-To allow easy visualization of the types derived from value observations without
+To allow easy examination of the types derived from value observations without
 having to examine the generated source code, \libsme{} is able to display the
-SMEIL program with the modified types in place. That is, if the program shown in
-\Cref{fig:oktype} was actually simulated, the resulting code shown in
+SMEIL program with the modified types in place. That is if the program shown in
+\Cref{fig:oktype} was simulated, the resulting code shown in
 \Cref{fig:non-violated} or \Cref{fig:violated} would be what is actually shown
 to the user.
 
-A limitation of the current implementation is that SMEIL buses are referenced by
-their bare name, rather than in relation to their position in the instance
-hierarchy. In SMEIL, it is perfectly valid to have multiple buses by the same
-name as long as are not declared in the same scope. However, having several
-{\ttfamily exposed} buses by the same name and referencing them through the
-co-simulation API currently results in undefined behavior. \libsme{} should be
-modified to either disallow multiple {\ttfamily exposed} buses globally, or
-better, to export buses through the API using hierarchical names. The latter is
-already being done by the VHDL code generator.
-\todo{This is not quite correct}
+% A limitation of the current implementation is that SMEIL buses are referenced by
+% their bare name, rather than in relation to their position in the instance
+% hierarchy. In SMEIL, it is perfectly valid to have multiple buses by the same
+% name as long as are not declared in the same scope. However, having several
+% {\ttfamily exposed} buses by the same name and referencing them through the
+% co-simulation API currently results in undefined behavior. \libsme{} should be
+% modified to either disallow multiple {\ttfamily exposed} buses globally, or
+% better, to export buses through the API using hierarchical names. The latter is
+% already being done by the VHDL code generator.
+% \todo{This is not quite correct}
 
-\section{Alternative Approaches}
+\section{Alternative approaches}
 We considered a couple of alternative approaches before settling on this final
 design. As written in the introduction to this chapter, co-simulation was
 introduced as a method for providing external test inputs to SMEIL programs.
@@ -457,36 +482,38 @@ Instead of adding the API for performing co-simulation, we could simply require
 that all SMEIL programs expecting external inputs would take these inputs from a
 \gls{csv} trace-file generated by simulating an equivalent SME network. In this
 scenario, the starting point would be a complete SME network implemented in, for
-example, PySME. By simulating this model, a trace-file containing a recording of
-values sent over buses would be generated. Then, the hardware-targeted processes
-of the PySME model would be translated to SMEIL and the recorded trace-file
-would be used for providing input to the SMIEL model.
+example, PySME. Simulating this network would generate a trace-file containing a
+recording of values sent over buses. Then, the hardware-targeted processes of
+the PySME model would be translated to SMEIL and the recorded trace-file would
+be used for providing input to the SMIEL model.
 
-\todo{Why would this be a problem?}Implementing this model would require less
-work, but it would only support using SMEIL as an intermediate language. The
-reason for this is the following: in order to generate the required trace file,
-a complete implementation of the SME network in a single language is required,
-thus, it would not be possible to implement a part of the network separately in
-SMEIL. Furthermore. the co-simulation model delegates the responsibility of
-generating the trace-file to \libsme{}. Since \libsme{} is also responsible for
-generating the final VHDL code, this makes it simpler to ensure that names and
-ordering of fields in the CSV file matches those expected by the generated VHDL
-test-bench. If the trace file was generated externally, it would also prevent
-changing the \libsme{} implementation in a way which altered the naming and/or
-ordering in the CSV files. Thus, the co-simulation model is advantageous even
-when SMEIL is used as an \gls{il}, and without it, SMEIL would not be usable as
-a primary implementation language at all.
+%\todo{Why would this be a problem?}
+Implementing this model would require less work, but it would only support using
+SMEIL as an intermediate language. The reason for this is the following: in
+order to generate the required trace file, a complete implementation of the SME
+network in a single language is required, thus, it would not be possible to
+implement a part of the network separately in SMEIL. Furthermore. the
+co-simulation model delegates the responsibility of generating the trace-file to
+\libsme{}. Since \libsme{} is also responsible for generating the final VHDL
+code, this makes it simpler to ensure that names and order of fields in the CSV
+file match those expected by the generated VHDL test bench. If the trace file
+was generated externally, it would also prevent changing the \libsme{}
+implementation in a way which altered the naming and ordering of fields in the
+CSV files. Thus, the co-simulation model is advantageous even when SMEIL is used
+as an \gls{il}, and without it, SMEIL would not be usable as a primary
+implementation language at all.
 
-\paragraph{External library generation}
-As an alternative to implementing an interface to the simulator within
-\libsme{}, we considered the alternative approach of generating an external
-library (for example in C++) and expose an API similar to the current. However,
-instead of loading the \libsme{} library and asking it to load an SMEIL program,
-we would load the generated library directly. The advantages of this would be:
+\paragraph{External library generation.}
+Insetad of implementing an interface to the simulator within \libsme{}, we
+considered the alternative approach of generating an external library (for
+example in C++) and expose an API similar to the current. However, instead of
+loading the \libsme{} library and asking it to load an SMEIL program, we would
+load the generated library directly. The advantages of this would be:
 \begin{enumerate}
-\item We would get two files in one swat by both providing a method for
+\item We would get two birds with one stone by both providing a method for
   co-simulation and a C++ code generator.
-\item The SMEIL code would execute significantly faster.
+\item The SMEIL code would be compiled to native code and therefore execute
+  significantly faster.
 \item A library generated from a SMEIL program would be significantly smaller
   than all of \libsme{} and could be distributed independently.
 \end{enumerate}
@@ -494,27 +521,27 @@ However, the disadvantages would be:
 \begin{enumerate}
 \item More complex client library integration: A library performing
   co-simulation with SMEIL would first need to compile the SMEIL code to a
-  library, then load the library (we could handle this from \libsme{}, but
-  that would diminish the third advantage)
+  library, then load the library. We could handle this from \libsme{}, but that
+  would diminish the third advantage.
 \item The implementation of observationally-derived typing (\Cref{sec:typing})
   would become more complicated as the observed types would need to be
   communicated back to \libsme{} in order for them to be used in the code
   generated from the SMEIL program.
 \end{enumerate}
     
-\paragraph{API considerations}
+\paragraph{API considerations.}
 The second consideration made was how to actually expose the API. As an
-alternative to the current C-style API, a web-based REST-style API was also
-considered. For this, \libsme{} would contain a web-server which would listen to
-requests from a client library and act accordingly. The advantage of this
-approach would be that web-APIs are more ubiquitous that C-style APIs, and thus,
-they may be able to support a wider range of clients. On the other hand, we were
-concerned with the performance of such an approach as issuing an HTTP request
-carries a significantly higher overhead than performing a platform level
-C-call. Another concern with the currently chosen approach was whether it was
-sufficiently platform neutral. However, we feel reasonably confident that the
-current approach is supported on all major platforms although only Linux has
-been tested.
+alternative to the current C API, a web-based REST-style API was also
+considered. To implement this, \libsme{} would contain a web-server which would
+listen to requests from a client library. The advantage of this approach would
+be that web-APIs are more ubiquitous that C-style APIs, and thus, they may be
+able to support a wider range of clients. On the other hand, we were concerned
+with the performance of such an approach as issuing an HTTP request carries a
+significantly higher overhead than performing a platform level C-call. Another
+concern with the currently chosen approach was whether it was sufficiently
+platform-neutral. However, we feel reasonably confident that the current
+approach is supported on all major platforms, although only Linux has been
+tested.
 
 
 %%% Local Variables:

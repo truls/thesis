@@ -1,6 +1,6 @@
 \chapter{Background}
 In this chapter, we introduce the Synchronous Message Exchange (SME) model and
-briefly describe its origins, evolution, semantics and implementations. The
+briefly describe its origins, evolution, semantics, and implementations. The
 design of SMEIL draws from the lessons learned throughout the brief time period
 in which SME has existed. Here, we convey these insights to the
 reader. Additionally, we motivate the need for custom hardware.
@@ -8,7 +8,7 @@ reader. Additionally, we motivate the need for custom hardware.
 \section{Synchronous Message Exchange}
 \label{sec:sme}
 
-\subsection{The Beginnings}
+\subsection{The beginnings}
 %The Synchronous Message Exchange model arose from a master thesis project 
 The Synchronous Message Exchange model was conceived based on the experiences of
 a masters thesis project \cite{Skaarup14} which attempted to generate a hardware
@@ -18,9 +18,9 @@ PyCSP~\cite{bjorndalen2007pycsp}, a CSP library for Python. The initial
 experiences using CSP for modeling the processor were promising. Especially the
 process abstraction of CSP proved to be well suited for representing the
 discrete components of a hardware design. Furthermore, the modularity
-originating from the {\itshape shared-nothing} property of CSP was advantageous
-as it allowed seamlessly interchanging fine- and course grained implementations
-of the same discrete component.
+originating from the {\itshape shared-nothing} %\todo{Explain shared-nothing}
+property of CSP was advantageous as it allowed seamlessly interchanging fine-
+and coarse-grained implementations of the same discrete component.
 
 \begin{figure}
   \centering
@@ -31,7 +31,7 @@ of the same discrete component.
   \label{fig:clocked}
 \end{figure}
 
-When the master thesis project, mentioned above, later attempted to convert the pure
+When the master thesis project, mentioned before, later attempted to convert the pure
 CSP model to a hardware description, they found the CSP approach less apt.
 % which later attempted to convert
 % the CSP model to an actual hardware description found the pure CSP approach less
@@ -60,9 +60,9 @@ processes ensured that values were propagated in the next cycle.
 
 In the end, the thesis successfully managed to translate simple PyCSP networks
 to VivadoC, a language for HLS. Despite this, the overall conclusion was that,
-while CSP could be forced to adhere by globally synchronous semantics, the
+while CSP could be forced to adhere to globally synchronous semantics, the
 networks required to do so were prohibitively complex. Furthermore, only a small
-subset of the features in CSP were used to model the design. Particularly, a
+subset of the features in CSP was used to model the design. Particularly, a
 concept central to CSP, \textit{external choice} which allows a process to
 determine if it should run based on whether it received a message, was not found
 to be applicable to hardware designs. However, not all was bad: As concluded by
@@ -74,13 +74,13 @@ inter-process dependencies.
 % instances of the same process.
 
 Based on these experiences, the idea of using pure CSP as a hardware design tool
-was discarded. In its place a derived model, called SME, was conceived which
+was discarded. In its place, a derived model, called SME, was conceived which
 maintained the concepts of CSP that were found beneficial while adding a new,
 globally synchronous, communication model~\cite{vinter2014synchronous}.
 
-\subsection{The Model}
+\subsection{The model}
 The key concept of the SME model is the introduction of an implicit clock,
-eliminating the complexity induced by forcing CSP to adhere by globally
+eliminating the complexity induced by forcing CSP to adhere to globally
 synchronous message passing semantics.
 
 % \todo{List properties}
@@ -97,11 +97,11 @@ SME buses use the name ``bus'' instead of ``channel'', to reinforce the hardware
 analogy and clarify its semantic equivalences with a physical signal bus found
 in hardware. Furthermore, where channels in traditional CSP only support a
 single value, a bus in SME is a bundle of individual channels connected to
-processes as an entity.  This is also considered part of the hardware analogy,
+processes as an entity.  This is also considered part of the hardware analogy
 since a single signal path in hardware often consists of several individual
 wires.
 
-\subsubsection{Execution Flow}
+\subsubsection{Execution flow}
 The SME concept of a ``clock cycle'' (\Cref{fig:smeclock}) goes through two
 distinct phases. During the {\itshape compute phase} all processes are
 run. During the {\itshape bus propagation} phase, values written to buses in the
@@ -118,7 +118,7 @@ reading end. The bus propagation phase copies all values from the reading-end to
 the writing end. Thus, values written in cycle $c$, will be read in cycle
 $c+1$. Another way to look at this is that, from the perspective of processes,
 the values of all buses change simultaneously since value propagation happens
-when the processes are not running.
+when the processes are not running.% \todo{Discuss process local state}
 
 % This method for executing a clock cycle is the key to the SME model. Since the
 % reading ends of a channel is kept constant during a cycle and only updated when
@@ -188,7 +188,7 @@ Even though the concepts of the SME model are uncomplicated, gaining an
 intuition of value propagation governed by globally synchronous semantics is
 harder. In an attempt to convey this intuition, we show an example of a simple
 network, seen in \Cref{fig:smeint}. We return to a slight variation of this
-example later, but for now, the network consist of two processes $P_1$ and $P_2$
+example later, but for now, the network consists of two processes $P_1$ and $P_2$
 and two buses connecting them, $b_1$ and $b_2$. In this network, a value is
 passed around in a circular fashion. The process $P_1$ simply forwards the value
 it receives while the $P_2$ process increments it by 1.\begin{figure}
@@ -276,10 +276,10 @@ steps shown in \Cref{fig:smeflow}. The first step is to write the SME model and
 related tests in a language with the required SME support. Then, this model is
 read by the SME library which simulates the design and runs the related tests in
 order to verify correctness. Three results are generated from the simulation: A
-rendering of the SME design in a HDL (only VHDL has been used so far), a
-test-bench written in the HDL used for verifying the generated code and finally,
+rendering of the SME design in an HDL (only VHDL has been used so far), a
+test bench written in the HDL used for verifying the generated code and finally,
 a \gls{csv}-file containing a value trace. The \gls{csv}-file is read by the
-test-bench which uses it as a source of input values to provide to the hardware
+test bench which uses it as a source of input values to provide to the hardware
 model and for checking that its output values are as expected. The generated HDL
 code is then passed to a vendor tool for synthesis and eventual implementation
 on hardware.
@@ -294,20 +294,20 @@ vendor tool.
 % \Cref{fig:smeflow}. First, an SME implementation written in a general-purpose
 % language is simulated, using a self-hosted simulator. The result of this
 % simulation is a trace file containing the values of the reading-ends of buses
-% for every cycle. The code is then translated to VHDL code and a test-bench for
-% testing the generated code. The test-bench will, using the values of the trace
+% for every cycle. The code is then translated to VHDL code and a test bench for
+% testing the generated code. The test bench will, using the values of the trace
 % file, cycle-for-cycle, test the generated code.
 
 % The purpose of all ``model'' SME implementation is to eventually generate a
 % hardware description.  Furthermore, verification of the generated VHDL code is simplified
-% since also a test-bench is generated. An overview of the process is shown in
+% since also a test bench is generated. An overview of the process is shown in
 % \Cref{fig:smeflow}. We show this, to give an understanding of what are the
 % phases of a normal SME workflow. 
 
 
 
 \subsection{Implementations}
-A number of different library implementations of the SME model exists.
+A number of different library implementations of the SME model exist.
 
 \subsubsection{\nth{1} PySME}
 The initial implementation of SME was extremely simple: A mere 69 \gls{sloc} of
@@ -343,7 +343,7 @@ two different processes.
 
 \subsubsection{\nth{2} PySME}
 \label{sec:sme2}
-After promising experiences with the first version of SME a revision to the
+After promising experiences with the first version of SME, a revision to the
 model and its implementation was published~\cite{vinter2015bus}. This version
 contained a number of changes, the most important being the abandonment of using
 the aforementioned named channels for connecting processes. Instead, buses were
@@ -421,7 +421,7 @@ Adder("Adder").clock(10)
 A C\# implementation of the new version of SME was also
 created~\cite{skovhede2016building}. The primary change from the Python SME
 implementations was the omission of a {\ttfamily Network}-like
-construct. Instead, connections between a pair of processes was established if
+construct. Instead, connections between a pair of processes were established if
 they referenced the same bus. So instead of process instances being
 parameterized with their connections, processes established connections
 themselves by referencing buses. This proved to be a more comprehensible way of
@@ -439,14 +439,14 @@ This version of SME also facilitated automatic translation to \gls{vhdl}.
 Based on the success of translating SME models written in C\# to VHDL, a project
 was started to bring the same capability to the Python version of
 SME~\cite{asheim2016vhdl}. The challenges of deriving static code from a dynamic
-language were briefly mentioned in the introduction. Due to this, the previous
-PySME implementation altered to require the programmer to state her intentions
-more clearly. For example, in the \nth{2} PySME, declaring a bus or
-instantiating a process could be done simply by assigning a variable in the
-{\ttfamily wire} function of a network class. This made analyzing the code
-difficult, since the programmers intention was not clearly stated. Thus, an
-{\ttfamily add} method was added to the \texttt{Network} class. This is the
-version of PySME used in the thesis.
+language were briefly mentioned in the introduction. Because of these
+challenges, the previous PySME implementation was altered to require the
+programmer to state her intentions more clearly. For example, in the \nth{2}
+PySME, declaring a bus or instantiating a process could be done simply by
+assigning a variable in the {\ttfamily wire} function of a network class. This
+made analyzing the code difficult since the programmer's intention was not
+clearly stated. Thus, an {\ttfamily add} method was added to the
+\texttt{Network} class. This is the version of PySME used in the thesis.
 
 \subsubsection{Conclusions}
 The design of SMEIL draws heavily from the lessons learned by the different
@@ -456,7 +456,7 @@ approaches used by these SME implementations.
 First of all, we concluded that requiring all buses and connections to be
 declared in one place quickly become difficult to understand. The other is, that
 it would be advantageous to associate process instances with bus instances to
-avoid the same pitfall as the original C\# implementation. This also helpful
+avoid the same pitfall as the original C\# implementation. This is also helpful
 when using SMEIL as an \gls{il} since buses and their connections translated
 straightforwardly regardless of the originating implementation.
 

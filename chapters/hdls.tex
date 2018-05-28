@@ -1,4 +1,4 @@
-\section{Motivations for Custom Hardware}
+\section{Motivations for custom hardware}
 % \todo{Write this}. Give a brief overview of a hardware design workflow and give
 % an overview of especially VHDL as this is discussed here repeatedly.
 
@@ -18,7 +18,7 @@ connected in a specific configuration to fulfill a particular purpose. In
 \glspl{ic}, this configuration is hard-wired -- etched into
 silicon using a lithographic process. An example of a hard-wired \gls{ic} is the
 common \gls{cpu}. \glspl{cpu} are highly versatile devices, capable
-of computing anything computable. However, in addition to their cheap price this
+of computing anything computable. However, in addition to their low price, this
 versatility is their main advantage and they excel at nothing else.
 % , it also mean that they excel at nothing.
 % \todo{mention von
@@ -28,27 +28,27 @@ versatility is their main advantage and they excel at nothing else.
 %   manner}.
 Since the advent of the first microprocessor, almost 5 decades ago, this problem
 has been widely recognized. Therefore, a steadily increasing amount of
-special-purpose hardware is being added in order to relieve the CPU of common
-and computationally intensive tasks. An early, and highly successful, example of
-this is the introduction of co-processors for performing floating-point
-calculations. As personal computers were increasingly being used for tasks
-relying heavily on floating-point arithmetic, emulating this in software
-increasingly became a limiting factor for performance. To solve this,
+special-purpose hardware is being added in order to relieve the main CPU
+pipeline of common and computationally intensive tasks. An early, and highly
+successful, example of this is the introduction of co-processors for performing
+floating-point calculations. As personal computers were increasingly being used
+for tasks relying heavily on floating-point arithmetic, emulating this in
+software increasingly became a limiting factor for performance. To solve this,
 specialized hardware units, known as Floating Point Units (FPU) were added to
 significantly speed up floating point calculations compared to what was possible
-using software emulation. Numerous similar examples exists, for example the
+using software emulation. Numerous similar examples exist, for example, the
 AES-NI instruction set built into recent CPUs, providing access to specialized
 circuitry for performing encryption and decryption using the ubiquitous Advanced
 Encryption Standard (AES) algorithm.
 
-The current use of specialized hardware only scratch the surface of applications
-for which it would be beneficial. For example, by offering a significantly
-improved performance-per-watt ratio~\cite{fowers2012performance}. This is
-especially important in the light of the
-ever-increasing~\cite{avgerinou2017trends} power consumption of data centers
+The current use of specialized hardware only scratches the surface of
+applications for which it would be beneficial. For example, by offering a
+significantly improved performance-per-watt
+ratio~\cite{fowers2012performance}. This is especially important in the light of
+the ever-increasing power consumption of data centers~\cite{avgerinou2017trends}
 which counter global efforts to decrease emissions. In an ideal world, everyone
 would have cheap and easy access to creating hardware specialized for their
-particular application. Unfortunately such hardware, known as \glspl{asic}, is
+particular application. Unfortunately, such hardware, known as \glspl{asic}, is
 extremely expensive and time-consuming to design and put into
 production. Furthermore, a very large number of units has to be ordered before
 achieving a reasonable cost-per-unit. Finally, mistakes are expensive since once
@@ -66,15 +66,16 @@ the hardware is made it can never be changed.
 % IC would double every year. This is commonly known as Moore's Law and has ensured
 % a steady increase in performance ever since. Today, Moore's law i
 
-\subsection{Field Programmable Gate Arrays (FPGA)}
+\glsreset{fpga}
+\subsection{\Glspl{fpga}}
 Reprogrammable computing, of which Field Programmable Gate Arrays (FPGAs) are
 the only prominent example, offers an attractive compromise between \glspl{asic} and
 more general devices such as \glspl{cpu} or \glspl{gpgpu}. While not nearly as good as
 \glspl{asic}~\cite{kuon2007measuring}, they can provide significant improvements in
-both performance and power-consumption at a much lower cost.
+both performance and power consumption at a much lower cost.
 
 \glspl{fpga} are \glspl{ic} which allow their circuits to be changed after
-manufacture (hence, they are programmable in the field) and can therefore be
+manufacture (hence, they are programmable in the field) and can, therefore, be
 reconfigured to fulfill any purpose. Of course, the circuitry on the chip cannot
 be physically changed, so \glspl{fpga} consists of an array of logic blocks
 which has configurable interconnects. The reprogramming of an \gls{fpga} happens
@@ -82,7 +83,7 @@ by reconfiguring switches which determines the signal path. Since the individual
 components on an \gls{fpga} are fine-grained, they can be reconfigured for any
 computational purpose by rewiring signal paths.
 
-\subsection{The VHSIC Hardware Description Language}
+\subsection{The VHSIC Hardware Description Language (VHDL)}
 As briefly mentioned in the introduction, \glspl{fpga} are usually programmed
 using Hardware Description Languages (HDLs) such as \gls{vhdl} or Verilog. We
 will focus on VHDL here, since that is the current target of SMEIL code
@@ -99,7 +100,7 @@ circuit which could be implemented on hardware.
 
 The standard of VHDL which is most widely supported by tools was released in
 1993. This is despite the fact that an updated version of the standard was
-released on 2008. However, even the most recent iteration of the standard is
+released in 2008. However, even the most recent iteration of the standard is
 fundamentally unchanged from the initial version. Therefore, VHDL has not
 benefited from decades of research in programming language productivity. As also
 written in the introduction, this becomes painfully obvious when VHDL is used
@@ -107,11 +108,13 @@ for anything other than writing the actual hardware description. Most hardware
 design workflows today use traditional HDLs both for writing the actual hardware
 implementation and the corresponding test-bench. Thus, the inadequacy of
 traditional HDLs for fulfilling the latter purpose creates both a productivity
-issue and a high-barrier of entry for potential hardware designers.
+issue and a high barrier of entry for potential hardware designers.
 
-Poor hardware design languages is not the only problem causing a high barrier of
-entry into the world of custom hardware. However, it is the problem that we, as
-software developers, are best equipped to help solving.
+Poor hardware design languages are not the only problem causing a high barrier
+of entry into the world of custom hardware. However, it is the problem that we,
+as software developers, are best equipped to help solving.
+% \todo{Grammarly wants
+%   ``help to sovle''.  Maybe rewrite sentence?}.
 
 % Poor languages for specifying hardware is not the only issue establishing a high
 % barrier of entry into hardware design, however, it is the one that we, as

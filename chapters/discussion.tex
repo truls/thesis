@@ -39,9 +39,9 @@ current SME implementations.
 \section{Usability of SMEIL}
 As a language for representing SME networks SMEIL is complete in the sense that
 it implements the elements and semantics required by the SME model. We have also
-shown a number of actual implementations of SME networks showing the practical
-use of SMEIL. Thus, SMEIL is capable of representing the SME models which are
-currently implemented in other languages.
+shown a number of actual implementations of SME networks illustrating the
+practical use of SMEIL. Thus, SMEIL is capable of representing the SME models
+which are currently implemented in other languages.
 
 % This is shown here through the numerous examples that we have been able to
 % implement.
@@ -54,16 +54,16 @@ currently implemented in other languages.
 
 
 We have previously argued for the potential benefits of using SMEIL in favor of
-general-purpose for writing hardware-targeted SME models. However, there are
-also several disadvantages related to implementing a new and distinct
+general-purpose languages for writing hardware-targeted SME models. However,
+there are also several disadvantages related to introducing a new and distinct
 language. One particular disadvantage is the abandonment of development
-environments, debuggers and other tooling that comes with an established
+environments, debuggers and other toolings that comes with an established
 general-purpose language. For SMEIL to offset these disadvantages, an additional
 development effort is required to replace this tooling. On the other hand,
 debuggers for conventional programming languages are not well suited for
-debugging concurrent models, such as SME. Therefore, introducing a new language,
-may create an avenue for creating new tooling which are better suited for their
-purpose.
+debugging concurrent models, such as SME. Therefore, introducing a new language
+may create an avenue for developing new toolings which are better suited for
+their purpose.
 
 % On the other hand,
 % in relation to debuggers it could be argued that languages for constructing
@@ -83,12 +83,12 @@ range of different general-purpose languages. The static structural definitions
 and the static type system of SMEIL forces a normalized representation of SME
 networks regardless of which source language the SMEIL code was generated
 from. Thus, when generating SMEIL from a dynamically typed source, it is the
-responsibility of the generator to ensure that the appropriate types are
+responsibility of the translator to ensure that the appropriate types are
 assigned. In PySME, for example, this problem was solved by allowing
-type-annotations to be written in comments. The result of this, is that a SMEIL
-program should not inherit any particular traits of the code that it was
-generated from. Therefore, SMEIL will allow combining SME networks that was
-originally written in different source languages.
+type-annotations to be written in comments~\cite{asheim2016vhdl}. The result of
+this is that a SMEIL program should not inherit any particular traits of the
+code that it was generated from. Therefore, SMEIL will allow combining SME
+networks that were originally written in different source languages.
 
 We have already shown an example of how SMEIL can function as an intermediate
 language for the PySME SME implementation. However, the PySME library is
@@ -96,10 +96,9 @@ restricted in terms of functionality compared to the C\# SME library which has
 been used as the base for all of the previously referenced SME models
 implemented on hardware. Compared to C\# SME, SMEIL and \libsme{} still lacks a
 number of essential features. Achieving feature-parity with ``state-of-the-art''
-SME libraries was considered outside the scope of this thesis due to the longer
-period of time that these libraries has been under development. However, it
-means that more work is required in order to make SMEIL usable as an IL for C\#
-SME.
+SME libraries were considered outside the scope of this thesis due to the more
+mature state of these libraries. However, it means that more work is required in
+order to make SMEIL usable as an IL for C\# SME.
 
 % \section{Relation with other HDLs}
 % Discuss how SME and specifically SMEIL relates to other similar ``simple''
@@ -112,25 +111,26 @@ SME.
 % Write about: Internal buses: We have language support based on inference from
 % usage, but not implemented. Arrays as buses
 
-\section{Co-Simulation and observation based typing}
+\section{Co-simulation and observation based typing}
 One of the strongest features of SMEIL is the co-simulation interface which
 allows it to seamlessly interact with SME networks written in other
 languages. It is the cornerstone of enabling SMEIL to be used both as an
 intermediate language and as a primary implementation language for SME models in
-a capable manner. For the intermediate-language use case it helps simplifying
-the implementation of SME libraries using it. For example by offloading the
-generation of trace-files. For use as a primary implementation language, it
-allows direct testing of designs without having to execute generated
-code. Furthermore, the co-simulation interface is central in enabling a tightly
-integrated implementation of the system for observation-based typing.
+a capable manner. For the intermediate-language use case, it helps with
+simplifying the implementation of SME libraries using it. For example by
+offloading the generation of trace-files. For use as a primary implementation
+language, it allows direct testing of designs without having to execute
+generated code. Furthermore, the co-simulation interface is essential for
+enabling a tightly integrated implementation of the system for observation-based
+typing.
 
 Co-simulation is a frequently used technique for verifying hardware designs (see
 e.g. CoCoTB referenced in \Cref{sec:retwork}), however, the presented SME-based
 solution is unique in that the same model is used on both sides of the
 simulation. As one particular advantage, the compositionality of SME means that
-a process may be moved seamlessly between both sides of the Co-Simulation.  We
+a process may be moved seamlessly between both sides of the co-simulation.  We
 have only shown an implementation of the API for Python here but we believe that
-extending other SME implementations with support for the \libsme co-simulation
+extending other SME implementations with support for the \libsme{} co-simulation
 API will be possible. This is the case since the API is kept ``as close to C''
 as possible. Hence, any language featuring a capable C interface should be able
 to use it.
@@ -139,26 +139,26 @@ to use it.
 % such...
 
 Our approach for determining types based on observed input is, to the best of
-our knowledge, also not implemented in any existing HDLs. We are aware that
+our knowledge, also not implemented by any existing HDLs. We are aware that
 there may be good reasons for this, due to the, as previously mentioned,
 inadequate safety provided by this approach. However, based on our limited
-testing, the productivity advantage of not having to place precise type bounds
+testing, the productivity advantage of not having to place precise size bounds
 on all internal variables does seem to be real. Furthermore, in some cases, such
-as quickly prototyping a design on a FPGA, safety may not be the primary desired
-features. Thus, if combined with static analysis to prove that the
-observationally derived type bounds really are safe, it may turn out to be a
+as quickly prototyping a design on an FPGA, safety may not be the primary
+desired feature. Thus, if combined with static analysis to prove that the
+observationally derived size bounds really are safe, it may turn out to be a
 powerful approach.
 
-\section{Target Language Support}
+\section{Target language support}
 We have currently only implemented a code generation backend for VHDL. We
-focused on supporting VHDL since the primary intended target for SME models are
+focused on supporting VHDL since the primary intended target for SME models is
 hardware designs. For this thesis, we chose not to implement support for
-additional code generation backends and instead making the core infrastructure
-related to SMEIL as complete as possible. However, having support for generating
-additional languages is desirable in several circumstances. Having, for example,
-C++ support will, as shown in \cite{skovhede2017c++}, allow for faster
-simulation of SME networks and allow SME networks to be used as independent
-libraries with other languages.
+additional code generation backends and, instead, focus on making the core
+infrastructure related to SMEIL as complete as possible. However, having support
+for generating additional languages is desirable in several
+circumstances. Having, for example, C++ support will, as shown in
+\cite{skovhede2017c++}, allow for faster simulation of SME networks and allow
+SME networks to be used as independent libraries with other languages.
 
 Supporting other HDLs, such as Verilog, is also desirable since it would allow
 SME models to interface with hardware designs implemented in HDLs other than
@@ -174,9 +174,9 @@ general as possible. Thus, we do not foresee any problems related to adding
 additional code-generation backends for SMEIL.
 
 We have not assessed the practicality of transforming SMEIL to languages
-following other paradigms, such as functional languages or alternative hardware
-description languages. So far, however, there has not been a need for SME models
-to be able to target such languages.
+following other paradigms, such as functional languages or different high-level
+hardware description languages. So far, however, there has not been a need for
+SME models to be able to target such languages.
 
 
 % However, compiling SMEIL to other languages, such as C++ ) is also desirable. Furthermore, \libsme is written with

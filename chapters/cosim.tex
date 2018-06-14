@@ -131,9 +131,9 @@ data with \libsme{}.
      char** argc)}]\hfill Loads an SMEIL file, while applying the supplied
    arguments to \libsme{}.
    \item[\texttt{bool sme_has_failed(SmeCtx* ctx)}]\hfill\\
-     Returns true if an operation within the libsme library failed.
+     Returns true if an operation within the \libsme{} library failed.
  \item[\texttt{char* sme_get_error_buffer(SmeCtx* ctx)}]\hfill\\
-   Returns a string containing the error message emitted by libsme. The memory
+   Returns a string containing the error message emitted by \libsme{}. The memory
    pointed to may not be freed except by calling the \texttt{sme_free} function.
  \item[\texttt{void sme_free(SmeCtx* ctx)}]\hfill\\
    Frees the SME library context and related resources.
@@ -167,8 +167,8 @@ data with \libsme{}.
    meaning the number is positive and 1 for a negative value.
  \item[\texttt{BusMap* sme_get_busmap(SmeCtx* ctx)}]\hfill\\
    Returns a pointer to a {\tt BusMap} structure containing the exposed buses of
-   the SME network. This function is intended to be used by implementers of {\tt
-     libsme} to generate internal representations of their SME buses. It is the
+   the SME network. This function is intended to be used by implementers of
+   \libsme{} to generate internal representations of their SME buses. It is the
    callers responsibility to free the memory returned by the function by calling
    \texttt{sme_free_busmap}.
 \item[\texttt{void sme_free_busmap(BusMap* bm)}]\hfill\\

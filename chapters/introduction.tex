@@ -32,7 +32,7 @@ resulting hardware implementation depend greatly on the aptitude of the
 programmer to add these annotations correctly. This requires a deep
 understanding of the transformation process and the underlying architecture of
 the targeted hardware. The difficulties of creating auto-parallelizing compilers
-for impure general-purpose languages are and arise well-known in particular due
+for impure general-purpose languages are well-known and arise in particular due
 to the challenges of resolving data
 dependencies~\cite{banerjee1976data,bodik2000abcd}. HLS utilities provide no
 revolutionary improvements in this regard and thus have a tendency to retain
@@ -102,7 +102,7 @@ structural constructs which are deeply rooted in the SME model. Furthermore, it
 provides a type-system which is tailored for hardware-specific subtleties that
 are difficult to express in general-purpose languages without deviating from
 established paradigms. An explicit design goal of SMEIL is to provide a simple
-and straight-forward mapping of code structures commonly found in imperative
+and straightforward mapping of code structures commonly found in imperative
 general-purpose languages. For testing designs implemented in SMEIL,
 general-purpose languages are well suited since their full range of available
 libraries can be utilized. Therefore, \libsme{} provides a simple and
@@ -148,7 +148,7 @@ domain-specific needs of hardware are not considered in the design of
 general-purpose software languages.
 
 \paragraph{C\# SME.}
-Translating SME models written in C\# is comparatively straight-forward since
+Translating SME models written in C\# is comparatively straightforward since
 language properties can be statically specified and are enforced by the
 compiler. For example, if we declare a variable as being constant, we can be
 sure that its value will never change beyond its initial assignment and

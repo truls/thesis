@@ -97,7 +97,7 @@ SME buses use the name ``bus'' instead of ``channel'', to reinforce the hardware
 analogy and clarify its semantic equivalences with a physical signal bus found
 in hardware. Furthermore, where channels in traditional CSP only support a
 single value, a bus in SME is a bundle of individual channels connected to
-processes as an entity.  This is also considered part of the hardware analogy
+processes as an entity. This is also considered part of the hardware analogy
 since a single signal path in hardware often consists of several individual
 wires.
 
@@ -114,8 +114,9 @@ Each channel in a bus has separate reading- and writing-ends. During the compute
 phase of a cycle, the reading-ends of channels are kept constant. The writing
 end of a channel has a single-element overwriting buffer. Therefore, when a
 process writes to a channel, the result is not immediately visible on the
-reading end. The bus propagation phase copies all values from the reading-end to
-the writing end. Thus, values written in cycle $c$, will be read in cycle
+reading end. The bus propagation phase copies all values from the writing end to
+% CHANGED:Swapped reading-end/writing-end
+the reading end. Thus, values written in cycle $c$, will be read in cycle
 $c+1$. Another way to look at this is that, from the perspective of processes,
 the values of all buses change simultaneously since value propagation happens
 when the processes are not running.% \todo{Discuss process local state}
@@ -426,7 +427,7 @@ they referenced the same bus. So instead of process instances being
 parameterized with their connections, processes established connections
 themselves by referencing buses. This proved to be a more comprehensible way of
 building networks as the information about connections was spread out throughout
-the program instead of being confined in a single class.  However, a shortcoming
+the program instead of being confined to a single class.  However, a shortcoming
 of this approach was the one-to-one correspondence between process and bus
 declarations and instances. This limitation was alleviated in later versions of
 C\# SME library by the introduction of {\itshape scopes} which allowed several
@@ -457,8 +458,8 @@ First of all, we concluded that requiring all buses and connections to be
 declared in one place quickly become difficult to understand. The other is, that
 it would be advantageous to associate process instances with bus instances to
 avoid the same pitfall as the original C\# implementation. This is also helpful
-when using SMEIL as an \gls{il} since buses and their connections translated
-straightforwardly regardless of the originating implementation.
+when using SMEIL as an \gls{il} since buses and their connections can be
+translated straightforwardly regardless of the originating implementation.
 
 
 %%% Local Variables:

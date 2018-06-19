@@ -1,0 +1,24 @@
+proc id(in inbus)
+    bus idout {
+        val: uint = 0;
+    };
+{
+    idout.val = inbus.val;
+}
+
+proc plusone(in inbus,
+             const one)
+    bus plusout {
+       val: uint = 0;
+    };
+{
+    plusout.val = inbus.val +
+                  one;
+}
+
+network plusone_net() {
+    instance plusone_inst of
+        plusone(id_inst.idout, 1);
+    instance id_inst of
+        id(plusone_inst.plusout);
+}

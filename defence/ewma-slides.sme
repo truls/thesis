@@ -1,0 +1,50 @@
+// ewma.sme
+
+sync proc calc (in data, const decay)
+    bus result {
+        val: i32;
+        valid: bool;
+    };
+    const sub: i32 = 1;
+    var prev: i32 = 0;
+
+{
+    if (data.valid) {
+        result.valid = true;
+        my.prev = (data.val >> decay) +
+                   (my.prev >> decay) *
+                   ((1 << decay) - 1);
+        result.val = my.prev;
+    } elif (!data.valid) {
+         result.val = my.prev;
+    } else {
+        result.valid = false;
+    }
+}
+
+sync proc merge (in long, in short) {
+    exposed bus output {
+        short: i32;
+        long: i32;
+        valid: bool;
+    };
+{
+    // [..]
+}
+
+network ewma (in stream, out result) {
+    const decay1: int = 2;
+    const decay2: int = 3;
+
+    exposed bus stream {
+        val: i43;
+        valid: bool;
+    };
+
+    instance short of calc (data: stream,
+                            decay: decay1);
+    instance long of calc (data: stream,
+                           decay: decay2);
+    instance _ of merge (long: long.result,
+                         short: short.result);
+}
